@@ -10,7 +10,7 @@
     </parent>
     <groupId>me.devedmc.streamq.commitlog</groupId>
     <artifactId>commitLog</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
     <name>commitLog</name>
     <description>commitLog</description>
     <properties>

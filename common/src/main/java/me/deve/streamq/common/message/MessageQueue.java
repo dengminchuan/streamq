@@ -25,8 +25,13 @@ public class MessageQueue {
         processQueue=new ProcessQueue();
         messageQueueInfo=new MessageQueueInfo();
     }
-    public void add(Message message){
+    public MessageQueue(MessageQueueInfo messageQueueInfo){
+        this.messageQueueInfo=messageQueueInfo;
+    }
+    public boolean add(Message message){
 
+        processQueue.add();
+        return false;
     }
 
 }

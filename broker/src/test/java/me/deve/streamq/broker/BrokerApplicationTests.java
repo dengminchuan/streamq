@@ -8,6 +8,7 @@ import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
+import me.devedmc.streamq.commitlog.CommitLog;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -36,6 +37,12 @@ class BrokerApplicationTests {
         byte[] serializeByteArr = kryoSerializer.serialize(functionMessage);
         FunctionMessage functionMessage2 = kryoSerializer.deserialize(serializeByteArr, FunctionMessage.class);
         System.out.println(functionMessage2);
+    }
+    @Test
+    void testCombineBytes(){
+        byte[] bytes = CommitLog.combineBytes("i love".getBytes(), "you".getBytes());
+        System.out.println(new String(bytes));
+
     }
 
 }

@@ -88,7 +88,13 @@ public class CommitLog {
         }
         return commitLog;
     }
-    public void add(Message message){
+
+    /**
+     *
+     * @param message
+     * @return offset
+     */
+    public Long add(Message message){
         if(!isAdd){
             isAdd=true;
             if(flushDiskType==FlushDiskType.ASYN_FLUSH_DISK){
@@ -97,19 +103,28 @@ public class CommitLog {
         }
         switch (flushDiskType){
             case ASYN_FLUSH_DISK -> {
+                int length = getLength(message);
+                commitLogOffset +=length;
                 pageCache.add(message);
+                return commitLogOffset-length;
             }
             case SYN_FLUSH_DISK -> {
-
+                return 0L;
             }
         }
-
+        return -1L;
+    }
+    private static int getLength(Message message) {
+        KryoSerializer kryoSerializer = new KryoSerializer();
+        byte[] messageBytes = kryoSerializer.serialize(message);
+        return messageBytes.length;
     }
     public void flushDiskAsyn(){
         ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
         Runnable task = () -> {
             if(!pageCache.isEmpty()){
-                pageCache.forEach(message -> {
+                Message message;
+                while((message=pageCache.poll())!=null){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     byte[] messageBytes = kryoSerializer.serialize(message);
                     int length=messageBytes.length;
@@ -117,19 +132,23 @@ public class CommitLog {
                         currentFileIndex++;
                         updateMessageFile(currentFileIndex);
                     }
-                    commitLogOffset +=length;
                     FileUtil.write2Binary(currentUsingFile,messageBytes,true);
-                    offsetMap.put(message.getId(),commitLogOffset);
-                });
-                pageCache.clear();
+                }
             }
         };
         flushDiskService.scheduleWithFixedDelay(task,FlushConstant.ASYN_FLUSH_DISK_INITIAL_DELAY,FlushConstant.ASYN_FLUSH_DISK_DELAY, TimeUnit.MILLISECONDS);
     }
-    public Long getAndRemoveMessageOffset(String id){
-        Long offset = offsetMap.get(id);
-        offsetMap.remove(id);
-        return offset;
+
+    public static byte[] combineBytes(byte[] bytes1,byte[] bytes2){
+        byte[] bytes=new byte[bytes1.length+bytes2.length];
+        for(int i=0;i<bytes.length;i++){
+            if(i<bytes1.length){
+                bytes[i]=bytes1[i];
+            }else{
+                bytes[i]=bytes2[i-bytes1.length];
+            }
+        }
+        return bytes;
     }
 
     public void setFlushDiskType(FlushDiskType flushDiskType) {

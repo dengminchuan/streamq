@@ -13,7 +13,6 @@ import me.deve.streamq.common.config.BrokerConfig;
 import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.config.NettyServerConfig;
 import me.deve.streamq.common.address.KryoInetAddress;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.net.UnknownHostException;
 @Slf4j
@@ -40,10 +39,16 @@ public class BrokerStartup {
         //set handler
         BrokerUploadHandler brokerUploadHandler = new BrokerUploadHandler(nettyClientConfig,brokerConfig,nettyServerConfig);
         MessageServerHandler messageServerHandler = new MessageServerHandler();
+        createMessageQueue(messageServerHandler);
         setClientHandler(brokerUploadHandler);
         setServerHandler(messageServerHandler);
         parseAndLoadArgs(args);
         startup();
+    }
+
+    private static void createMessageQueue(MessageServerHandler messageServerHandler) {
+        MessageQueueController messageQueueController = new MessageQueueController();
+        messageServerHandler.setMessageQueueController(messageQueueController);
     }
 
     private static void startup() {

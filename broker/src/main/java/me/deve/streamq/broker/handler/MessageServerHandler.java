@@ -25,6 +25,11 @@ import me.deve.streamq.common.util.serializer.KryoSerializer;
 public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
 
+    public void setMessageQueueController(MessageQueueController messageQueueController) {
+        this.messageQueueController = messageQueueController;
+    }
+
+    private MessageQueueController messageQueueController;
 
     private final static KryoSerializer kryoSerializer = new KryoSerializer();
     private ChannelHandlerContext ctx;
@@ -49,7 +54,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
         //when producer provide message
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
-            MessageQueueController.add(functionMessage.getMessage());
+//            MessageQueueController.add(functionMessage.getMessage());
         }
         else if(functionMessage.getMessageType()==FunctionMessageType.REGISTER_PULL_REQUEST){
             channelGroup.add(ctx.channel());

@@ -27,7 +27,9 @@ public class ProcessQueue {
         consumeQueue=new ConcurrentLinkedQueue<>();
     }
 
+    public void  add(){
 
+    }
 
 
 }
