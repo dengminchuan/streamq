@@ -5,8 +5,6 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.common.queue;
 
-import me.deve.streamq.common.message.Message;
-import me.deve.streamq.common.message.MessageExtBatch;
 import me.deve.streamq.common.message.MessageInfo;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -17,6 +15,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ProcessQueue {
 
 
+    public ConcurrentLinkedQueue<MessageInfo> getConsumeQueue() {
+        return consumeQueue;
+    }
 
     private ConcurrentLinkedQueue<MessageInfo> consumeQueue;
 
@@ -27,9 +28,15 @@ public class ProcessQueue {
         consumeQueue=new ConcurrentLinkedQueue<>();
     }
 
-    public void  add(){
-
+    public void  add(MessageInfo messageInfo){
+        consumeQueue.add(messageInfo);
     }
 
+    @Override
+    public String toString() {
+        return "ProcessQueue{" +
+                "consumeQueue=" + consumeQueue +
+                '}';
+    }
 
 }

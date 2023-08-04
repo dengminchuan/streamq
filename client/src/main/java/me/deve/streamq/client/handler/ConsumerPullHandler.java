@@ -12,10 +12,12 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.constant.MessageConstant;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
+import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageListenerConcurrently;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
@@ -27,40 +29,41 @@ import java.util.TimerTask;
 public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
 
-    private final KryoSerializer kryoSerializer = new KryoSerializer();
+    private ThreadLocal<Long> consumerOffset=new ThreadLocal<>();
 
     public void setCachedMessageCount(Integer cachedMessageCount) {
         this.cachedMessageCount = cachedMessageCount;
     }
 
-    public Integer getCachedMessageCount() {
-        return cachedMessageCount;
-    }
-
+    @Getter
     private Integer cachedMessageCount=0;
-
-    public MessageListenerConcurrently getMessageListener() {
-        return messageListener;
-    }
 
     public void setMessageListener(MessageListenerConcurrently messageListener) {
         this.messageListener = messageListener;
     }
 
+    @Getter
     private MessageListenerConcurrently messageListener;
 
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf byteBuf= (ByteBuf) msg;
-//        byte[] array = new byte[byteBuf.readableBytes()];
-//        byteBuf.readBytes(array);
-        System.out.println(byteBuf.toString(CharsetUtil.UTF_8));
-        //todo:store message
-        cachedMessageCount++;
+        byte[] array = new byte[byteBuf.readableBytes()];
+        byteBuf.readBytes(array);
         byteBuf.release();
-        //only push message when previous message return
-        startPullMessage(ctx);
+        KryoSerializer kryoSerializer = new KryoSerializer();
+        FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
+        if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
+            Message message = functionMessage.getMessage();
+            //todo:store message
+            cachedMessageCount++;
+
+            //only push message when previous message return
+            startPullMessage(ctx);
+            consumerOffset+=
+        }
+
 
     }
 
@@ -77,6 +80,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void register2Broker(ChannelHandlerContext ctx) {
+        KryoSerializer kryoSerializer = new KryoSerializer();
         FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.REGISTER_PULL_REQUEST);
         byte[] serializeArr = kryoSerializer.serialize(functionMessage);
         int messageLength = serializeArr.length;
@@ -91,6 +95,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                 if(cachedMessageCount<=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
+
                     byte[] serializeArr = kryoSerializer.serialize(functionMessage);
                     int messageLength = serializeArr.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));

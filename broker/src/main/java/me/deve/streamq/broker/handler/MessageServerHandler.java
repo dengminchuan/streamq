@@ -35,12 +35,14 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     private ChannelHandlerContext ctx;
 
     private volatile ChannelGroup channelGroup=new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         this.ctx=ctx;
     }
     public void pushMessageToAllConsumer(){
-
+        //write back a FunctionMessage
        channelGroup.writeAndFlush(allocator.buffer().writeBytes("first test message".getBytes()));
     }
 
@@ -54,7 +56,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
         //when producer provide message
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
-//            MessageQueueController.add(functionMessage.getMessage());
+            Long offset = messageQueueController.add(functionMessage.getMessage());
         }
         else if(functionMessage.getMessageType()==FunctionMessageType.REGISTER_PULL_REQUEST){
             channelGroup.add(ctx.channel());
@@ -63,7 +65,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
             //pull message,use long cycle mode
             //todo:Determine if there is a message.
             // If there is no message, store the request and wait until there is a message before returning
-
+            Long offset = functionMessage.getOffset();
             pushMessageToAllConsumer();
         }
 

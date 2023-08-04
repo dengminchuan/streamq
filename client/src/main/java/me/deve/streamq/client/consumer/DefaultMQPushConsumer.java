@@ -43,6 +43,8 @@ public class DefaultMQPushConsumer implements MQConsumer {
 
     private MessageListenerConcurrently messageListener=null;
 
+    
+
 
     private ThreadPoolExecutor threadPool=new ThreadPoolExecutor(
             10,
@@ -86,10 +88,7 @@ public class DefaultMQPushConsumer implements MQConsumer {
             log.info("establishing connection error:"+e);
         }
         connectConsumers(consumerTargetBrokers);
-
-
     }
-
     private void connectConsumers(HashMap<String, List<Broker>> consumerTargetBrokers) {
         ArrayList<KryoInetAddress> inetSocketAddresses = new ArrayList<>();
         consumerTargetBrokers.forEach((s, brokers) ->

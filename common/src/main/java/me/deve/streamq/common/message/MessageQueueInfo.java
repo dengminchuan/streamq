@@ -15,7 +15,6 @@ public class MessageQueueInfo {
 
     private Broker broker;
 
-    private String storageLocation;
     public MessageQueueInfo(){
 
     }

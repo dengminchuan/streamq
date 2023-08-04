@@ -7,6 +7,7 @@ package me.devedmc.streamq.commitlog;
 
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.queue.ProcessQueue;
 import me.deve.streamq.common.thread.ShutdownHookThread;
 import me.deve.streamq.common.util.FileUtil;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
@@ -15,14 +16,15 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
+
 
 @Slf4j
 public class CommitLog {
-    private String location;
+    private String location=System.getProperty("user.dir");;
 
 
     private final String FILE_INDEX_CONF_PATH=System.getProperty("file.separator")+"fileIndex.conf";
+    private final String COMMITLOG_OFFSET=System.getProperty("file.separator")+"commitlogOffset.conf";
 
     private final String MESSAGE_STORAGE_FILE_PATH=System.getProperty("file.separator");
 
@@ -30,19 +32,18 @@ public class CommitLog {
 
     private Integer previousUsingFileIndex=0;
 
-    private final List<File> storeFiles =new ArrayList<>();
+    private  List<File> storeFiles=new ArrayList<>();
     private File currentUsingFile;
 
     private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
 
-    private ConcurrentHashMap<String,Long> offsetMap=new ConcurrentHashMap<>();
 
     private Long commitLogOffset =0L;
 
     /**
      * single file max 1GB
      */
-    private Long offset = 60L;
+    private Long offset = 1024*1024*1024L;
     /**
      * current use file
      */
@@ -52,18 +53,37 @@ public class CommitLog {
     private Boolean isAdd=false;
 
     private final ConcurrentLinkedQueue<Message> pageCache=new ConcurrentLinkedQueue<>();
+    private ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
     private CommitLog(){
-        location=System.getProperty("user.dir")+FILE_PATH;
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(() -> {
             //record current file index
             File file = new File(location + FILE_INDEX_CONF_PATH);
             FileUtil.string2File(file,currentFileIndex.toString(),false);
+            flushDiskService.shutdown();
+            persist();
+            File offsetFile = new File(location + COMMITLOG_OFFSET);
+            FileUtil.string2File(offsetFile, commitLogOffset.toString(),false);
             return null;
         }));
+        File files = new File(location + "/files.bin");
         File indexFile = new File(location + FILE_INDEX_CONF_PATH);
-        previousUsingFileIndex = Integer.parseInt(FileUtil.file2String(indexFile));
+        if(indexFile.exists()){
+            previousUsingFileIndex = Integer.parseInt(FileUtil.file2String(indexFile));
+        }else{
+            previousUsingFileIndex=0;
+        }
         updateMessageFile(previousUsingFileIndex);
+        File offsetFile = new File(location + COMMITLOG_OFFSET);
+        if(offsetFile.exists()){
+            commitLogOffset= Long.valueOf(FileUtil.file2String(new File(location + COMMITLOG_OFFSET)));
+        }else{
+            commitLogOffset=0L;
+        }
+
     }
+
+
+
     private void updateMessageFile(Integer fileIndex){
         String messageFileName = String.format("%020d", fileIndex * offset)+".bin";
         File messageFile = new File(location + MESSAGE_STORAGE_FILE_PATH+messageFileName);
@@ -74,7 +94,7 @@ public class CommitLog {
                 log.error("create file error");
             }
         }
-        storeFiles.add(currentUsingFile);
+        storeFiles.add(messageFile);
         currentUsingFile=messageFile;
 
     }
@@ -114,29 +134,31 @@ public class CommitLog {
         }
         return -1L;
     }
-    private static int getLength(Message message) {
+    public static int getLength(Message message) {
         KryoSerializer kryoSerializer = new KryoSerializer();
         byte[] messageBytes = kryoSerializer.serialize(message);
         return messageBytes.length;
     }
     public void flushDiskAsyn(){
-        ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
-        Runnable task = () -> {
-            if(!pageCache.isEmpty()){
-                Message message;
-                while((message=pageCache.poll())!=null){
-                    KryoSerializer kryoSerializer = new KryoSerializer();
-                    byte[] messageBytes = kryoSerializer.serialize(message);
-                    int length=messageBytes.length;
-                    if(length+ currentUsingFile.length() >=offset){
-                        currentFileIndex++;
-                        updateMessageFile(currentFileIndex);
-                    }
-                    FileUtil.write2Binary(currentUsingFile,messageBytes,true);
-                }
-            }
-        };
+        flushDiskService = Executors.newScheduledThreadPool(1);
+        Runnable task = this::persist;
         flushDiskService.scheduleWithFixedDelay(task,FlushConstant.ASYN_FLUSH_DISK_INITIAL_DELAY,FlushConstant.ASYN_FLUSH_DISK_DELAY, TimeUnit.MILLISECONDS);
+    }
+
+    private void persist() {
+        if(!pageCache.isEmpty()){
+            Message message;
+            while((message=pageCache.poll())!=null){
+                KryoSerializer kryoSerializer = new KryoSerializer();
+                byte[] messageBytes = kryoSerializer.serialize(message);
+                int length=messageBytes.length;
+                if(length+ currentUsingFile.length() >=offset){
+                    currentFileIndex++;
+                    updateMessageFile(currentFileIndex);
+                }
+                FileUtil.write2Binary(currentUsingFile,messageBytes,true);
+            }
+        }
     }
 
     public static byte[] combineBytes(byte[] bytes1,byte[] bytes2){

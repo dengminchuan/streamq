@@ -10,5 +10,5 @@ import me.deve.streamq.common.consumer.ConsumeConcurrentlyStatus;
 import java.util.List;
 
 public interface MessageListenerConcurrently extends MessageListener{
-    ConsumeConcurrentlyStatus consumeMessage(final List<MessageExt> message);
+    ConsumeConcurrentlyStatus consumeMessage(final Message message);
 }

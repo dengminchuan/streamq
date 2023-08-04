@@ -11,4 +11,6 @@ public class MessageConstant {
     public final static Integer PULL_MESSAGE_INTERVAL = 1000;
 
     public final static Integer MAX_BATCH_SIZE=100;
+
+
 }

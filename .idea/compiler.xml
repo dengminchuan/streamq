@@ -10,8 +10,8 @@
         <module name="client" />
         <module name="nameserver" />
         <module name="commitLog" />
-        <module name="broker" />
         <module name="common" />
+        <module name="broker" />
         <module name="remoting" />
       </profile>
     </annotationProcessing>

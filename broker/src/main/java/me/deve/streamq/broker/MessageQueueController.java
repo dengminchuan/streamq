@@ -6,7 +6,9 @@
 package me.deve.streamq.broker;
 
 import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.message.MessageInfo;
 import me.deve.streamq.common.message.MessageQueue;
+import me.deve.streamq.common.message.MessageQueueInfo;
 import me.devedmc.streamq.commitlog.CommitLog;
 
 public class MessageQueueController {
@@ -24,15 +26,18 @@ public class MessageQueueController {
      * @param message
      * @return
      */
-    public  boolean add(Message message) {
-        boolean isAdd1;
-        boolean isAdd2;
+    public Long add(Message message) {
+        Long offset;
         synchronized (this) {
-            isAdd1 = messageQueue.add(message);
-            isAdd2=commitLog.add(message)==-1;
+            offset=commitLog.add(message);
+            MessageInfo messageInfo = new MessageInfo(offset, (long) CommitLog.getLength(message));
+            messageQueue.add(messageInfo);
         }
-
-        return isAdd1 &&isAdd2 ;
+        return offset ;
     }
+    public void setMessageQueueInfo(MessageQueueInfo messageQueueInfo){
+        this.messageQueue.setMessageQueueInfo(messageQueueInfo);
+    }
+
 
 }

@@ -7,11 +7,13 @@ import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.address.KryoInetAddress;
+import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.queue.ProcessQueue;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 import me.devedmc.streamq.commitlog.CommitLog;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 
 
 class BrokerApplicationTests {
@@ -43,6 +45,29 @@ class BrokerApplicationTests {
         byte[] bytes = CommitLog.combineBytes("i love".getBytes(), "you".getBytes());
         System.out.println(new String(bytes));
 
+    }
+    @Test
+    void testPath(){
+        System.out.println(System.getProperty("user.dir"));
+    }
+    @Test
+    void testMessageQueueController(){
+
+        MessageQueueController messageQueueController = new MessageQueueController();
+        messageQueueController.add(new Message("test1","this is a test message1".getBytes()));
+        messageQueueController.add(new Message("test2","hello".getBytes()));
+        messageQueueController.add(new Message("test3","streamq come on".getBytes()));
+        messageQueueController.add(new Message("test4","wow".getBytes()));
+        messageQueueController.add(new Message("test5","User username={wow}".getBytes()));
+        messageQueueController.add(new Message("test6","last".getBytes()));
+    }
+    @Test
+    void testDeserialize() throws IOException {
+        KryoSerializer kryoSerializer = new KryoSerializer();
+        File file = new File("C:\\Users\\lv jiang er hao\\Desktop\\streamq\\broker\\messageQueue.log");
+        byte[] bytes = new FileInputStream(file).readAllBytes();
+        ProcessQueue deserialize = kryoSerializer.deserialize(bytes, ProcessQueue.class);
+        System.out.println(deserialize.toString());
     }
 
 }

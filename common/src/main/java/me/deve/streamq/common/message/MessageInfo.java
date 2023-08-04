@@ -5,9 +5,16 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.common.message;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
  * record message info
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MessageInfo {
     /**
      * 8 byte
@@ -21,4 +28,9 @@ public class MessageInfo {
      * 4byte
      */
     private Integer tagHashCode;
+
+    public MessageInfo(Long queueOffset, Long length){
+        this.queueOffset=queueOffset;
+        this.length=length;
+    }
 }

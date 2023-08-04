@@ -7,6 +7,7 @@ package me.deve.streamq.common.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.util.serializer.Serializer;
@@ -26,6 +27,7 @@ public class FunctionMessage implements Serializable {
 
     private List<String> topics;
 
+    private Long offset=0L;
 
 
     public FunctionMessage(FunctionMessageType functionMessageType,List<String> topics) {
