@@ -95,7 +95,6 @@ public class DefaultMQProducer implements MQProducer{
         } catch (InterruptedException e) {
             log.error("obtain semaphore failed,msg:"+e.getMessage());
         }
-        System.out.println(topicRouteData);
 
     }
 
@@ -123,7 +122,6 @@ public class DefaultMQProducer implements MQProducer{
     public SendResult send(final Message message){
         //todo :choose broker by topic
         KryoInetAddress brokerAddress = chooseBroker(strategy,topicRouteData,message.getTopic());
-        System.out.println(brokerAddress);
         if(brokerAddress==null){
             //todo:obtain address twice
         }

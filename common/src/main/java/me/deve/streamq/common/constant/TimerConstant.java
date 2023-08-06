@@ -24,4 +24,6 @@ public class TimerConstant {
 
     public static final Integer CONSUMER_OBTAIN_BROKER_INTERVAL=10000;
 
+    public static final Integer CHECK_PULL_REQUEST_TABLE_DELAY=5000;
+
 }

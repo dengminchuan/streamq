@@ -5,9 +5,9 @@
 //@software:IntelliJ IDEA
 package me.devedmc.streamq.commitlog;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.message.Message;
-import me.deve.streamq.common.queue.ProcessQueue;
 import me.deve.streamq.common.thread.ShutdownHookThread;
 import me.deve.streamq.common.util.FileUtil;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
@@ -28,7 +28,6 @@ public class CommitLog {
 
     private final String MESSAGE_STORAGE_FILE_PATH=System.getProperty("file.separator");
 
-    private final String FILE_PATH=System.getProperty("file.separator")+"commitLog";
 
     private Integer previousUsingFileIndex=0;
 
@@ -38,12 +37,13 @@ public class CommitLog {
     private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
 
 
+    @Getter
     private Long commitLogOffset =0L;
 
     /**
      * single file max 1GB
      */
-    private Long offset = 1024*1024*1024L;
+    private final Long MAX_SINGLE_FILE_SIZE = 1024*1024*1024L;
     /**
      * current use file
      */
@@ -65,7 +65,6 @@ public class CommitLog {
             FileUtil.string2File(offsetFile, commitLogOffset.toString(),false);
             return null;
         }));
-        File files = new File(location + "/files.bin");
         File indexFile = new File(location + FILE_INDEX_CONF_PATH);
         if(indexFile.exists()){
             previousUsingFileIndex = Integer.parseInt(FileUtil.file2String(indexFile));
@@ -85,7 +84,7 @@ public class CommitLog {
 
 
     private void updateMessageFile(Integer fileIndex){
-        String messageFileName = String.format("%020d", fileIndex * offset)+".bin";
+        String messageFileName = String.format("%020d", fileIndex * MAX_SINGLE_FILE_SIZE)+".bin";
         File messageFile = new File(location + MESSAGE_STORAGE_FILE_PATH+messageFileName);
         if(!messageFile.exists()){
             try {
@@ -152,7 +151,7 @@ public class CommitLog {
                 KryoSerializer kryoSerializer = new KryoSerializer();
                 byte[] messageBytes = kryoSerializer.serialize(message);
                 int length=messageBytes.length;
-                if(length+ currentUsingFile.length() >=offset){
+                if(length+ currentUsingFile.length() >= MAX_SINGLE_FILE_SIZE){
                     currentFileIndex++;
                     updateMessageFile(currentFileIndex);
                 }

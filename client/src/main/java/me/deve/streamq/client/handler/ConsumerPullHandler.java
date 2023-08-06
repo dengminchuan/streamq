@@ -61,6 +61,9 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
             Message message = functionMessage.getMessage();
             //todo:store message
+            ConcurrentLinkedQueue<Message> tempCache = cacheMessage.get();
+            tempCache.add(message);
+            cacheMessage.set(tempCache);
             cachedMessageCount++;
             //only push message when previous message return
             startPullMessage(ctx);
@@ -79,7 +82,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     private void consumeMessage() {
 
-        messageListener.consumeMessage();
+//        messageListener.consumeMessage();
         cachedMessageCount--;
     }
 
@@ -99,9 +102,9 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                 if(cachedMessageCount<=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
-                    byte[] serializeArr = kryoSerializer.serialize(functionMessage);
-                    int messageLength = serializeArr.length;
-                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
+                    byte[] pullRequest = kryoSerializer.serialize(functionMessage);
+                    int messageLength = pullRequest.length;
+                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
                 }
 
 

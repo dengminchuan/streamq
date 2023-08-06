@@ -14,10 +14,10 @@ import java.util.List;
 public class ClientApplication {
 
     public static void main(String[] args) {
-        DefaultMQPushConsumer defaultMQConsumer = new DefaultMQPushConsumer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
-        defaultMQConsumer.subscribe("test topic");
-        defaultMQConsumer.registerMessageListener(message -> null);
-        defaultMQConsumer.start();
+//        DefaultMQPushConsumer defaultMQConsumer = new DefaultMQPushConsumer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
+//        defaultMQConsumer.subscribe("test topic");
+//        defaultMQConsumer.registerMessageListener(message -> null);
+//        defaultMQConsumer.start();
         DefaultMQProducer defaultMQProducer = new DefaultMQProducer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
         defaultMQProducer.start();
         defaultMQProducer.send(new Message("test topic","test".getBytes()));

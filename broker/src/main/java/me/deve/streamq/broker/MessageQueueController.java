@@ -5,6 +5,7 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.broker;
 
+import lombok.Getter;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageInfo;
 import me.deve.streamq.common.message.MessageQueue;
@@ -14,6 +15,7 @@ import me.devedmc.streamq.commitlog.CommitLog;
 public class MessageQueueController {
     private final MessageQueue messageQueue=new MessageQueue();
 
+    @Getter
     private CommitLog commitLog=CommitLog.getInstance();
 
     public  MessageQueueController(){
