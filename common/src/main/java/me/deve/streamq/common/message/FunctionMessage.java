@@ -29,6 +29,13 @@ public class FunctionMessage implements Serializable {
 
     private Long offset=0L;
 
+    public void setMessageLength(Long messageLength) {
+        this.messageLength = messageLength;
+    }
+
+    @Getter
+    private Long messageLength;
+
 
     public FunctionMessage(FunctionMessageType functionMessageType,List<String> topics) {
         this.messageType=functionMessageType;

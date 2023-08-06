@@ -47,7 +47,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
 //        ByteBuf byteBuf= (ByteBuf) msg;
 //        byte[] array = new byte[byteBuf.readableBytes()];
 //        byteBuf.readBytes(array);
@@ -65,6 +65,8 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
             //pull message,use long cycle mode
             //todo:Determine if there is a message.
             // If there is no message, store the request and wait until there is a message before returning
+            //
+
             Long offset = functionMessage.getOffset();
             pushMessageToAllConsumer();
         }

@@ -23,6 +23,7 @@ import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -38,8 +39,11 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     @Getter
     private Integer cachedMessageCount=0;
 
+    private ThreadLocal<ConcurrentLinkedQueue<Message>> cacheMessage=new ThreadLocal<>();
+
     public void setMessageListener(MessageListenerConcurrently messageListener) {
         this.messageListener = messageListener;
+
     }
 
     @Getter
@@ -58,10 +62,9 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
             Message message = functionMessage.getMessage();
             //todo:store message
             cachedMessageCount++;
-
             //only push message when previous message return
             startPullMessage(ctx);
-            consumerOffset+=
+            consumerOffset.set(consumerOffset.get()+functionMessage.getMessageLength());
         }
 
 
@@ -75,6 +78,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void consumeMessage() {
+
         messageListener.consumeMessage();
         cachedMessageCount--;
     }
@@ -95,7 +99,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                 if(cachedMessageCount<=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
-
                     byte[] serializeArr = kryoSerializer.serialize(functionMessage);
                     int messageLength = serializeArr.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
