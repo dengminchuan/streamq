@@ -18,17 +18,14 @@ import java.util.Map;
  */
 public class Message {
 
-        public String getId() {
-                return id;
-        }
 
-        private String id= IdUtil.simpleUUID();
+
+
 
         @Override
         public String toString() {
                 return "Message{" +
-                        "id='" + id + '\'' +
-                        ", messageType=" + messageType +
+                        "messageType=" + messageType +
                         ", topic='" + topic + '\'' +
                         ", MAX_MESSAGE_SIZE=" + MAX_MESSAGE_SIZE +
                         ", body=" + Arrays.toString(body) +

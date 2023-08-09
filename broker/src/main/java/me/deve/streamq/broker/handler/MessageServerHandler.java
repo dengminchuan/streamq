@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+
 @Slf4j
 @ChannelHandler.Sharable
 public class MessageServerHandler extends ChannelInboundHandlerAdapter {
@@ -38,7 +39,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private MessageQueueController messageQueueController;
-
     private final static KryoSerializer kryoSerializer = new KryoSerializer();
 
     private volatile ChannelGroup channelGroup=new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
@@ -52,7 +52,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void startCheckPullRequestTable() {
-
         ScheduledExecutorService checkPullRequestService = Executors.newScheduledThreadPool(1);
         Runnable checkRequestTask = () ->{
             Iterator<Map.Entry<ChannelHandlerContext, Long>> iterator = pullRequestTable.entrySet().iterator();
@@ -66,7 +65,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         };
-
                 pullRequestTable.forEach((channelHandlerContext, offset) -> {
             //check if there have new message
             if(messageQueueController.getCommitLog().getCommitLogOffset()>offset){
@@ -83,7 +81,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
     public void pushMessage(Long consumerOffset, ChannelHandlerContext ctx){
            //todo:find message and return
-
+            
     }
 
     @Override
