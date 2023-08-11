@@ -14,8 +14,9 @@ import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.*;
+
+import static me.devedmc.streamq.commitlog.FilePath.*;
 
 
 @Slf4j
@@ -23,15 +24,14 @@ public class CommitLog {
     private String location=System.getProperty("user.dir");;
 
 
-    private final String FILE_INDEX_CONF_PATH=System.getProperty("file.separator")+"fileIndex.conf";
-    private final String COMMITLOG_OFFSET=System.getProperty("file.separator")+"commitlogOffset.conf";
-
-    private final String MESSAGE_STORAGE_FILE_PATH=System.getProperty("file.separator");
+//    private final String FILE_INDEX_CONF_PATH=System.getProperty("file.separator")+"fileIndex.conf";
+//    private final String COMMITLOG_OFFSET=System.getProperty("file.separator")+"commitlogOffset.conf";
+//
+//    private final String MESSAGE_STORAGE_FILE_PATH=System.getProperty("file.separator");
 
 
     private Integer previousUsingFileIndex=0;
 
-    private  List<File> storeFiles=new ArrayList<>();
     private File currentUsingFile;
 
     private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
@@ -51,10 +51,13 @@ public class CommitLog {
     private static volatile CommitLog commitLog;
 
     private Boolean isAdd=false;
+    @Getter
+    private ArrayList<File> files=new ArrayList<>();
 
     private final ConcurrentLinkedQueue<Message> pageCache=new ConcurrentLinkedQueue<>();
     private ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
     private CommitLog(){
+        KryoSerializer kryoSerializer = new KryoSerializer();
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(() -> {
             //record current file index
             File file = new File(location + FILE_INDEX_CONF_PATH);
@@ -63,8 +66,20 @@ public class CommitLog {
             persist();
             File offsetFile = new File(location + COMMITLOG_OFFSET);
             FileUtil.string2File(offsetFile, commitLogOffset.toString(),false);
+            File managerFile=new File(location+MANAGER_FILE_PATH);
+            FileUtil.write2Binary(managerFile,kryoSerializer.serialize(files),false);
             return null;
         }));
+        File managerFile=new File(location+MANAGER_FILE_PATH);
+        if(managerFile.exists()){
+                try (FileInputStream fis = new FileInputStream(managerFile)){
+                    files = kryoSerializer.deserialize(fis.readAllBytes(), ArrayList.class);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else{
+           files=new ArrayList<>();
+        }
         File indexFile = new File(location + FILE_INDEX_CONF_PATH);
         if(indexFile.exists()){
             previousUsingFileIndex = Integer.parseInt(FileUtil.file2String(indexFile));
@@ -89,11 +104,11 @@ public class CommitLog {
         if(!messageFile.exists()){
             try {
                 messageFile.createNewFile();
+                files.add(messageFile);
             } catch (IOException e) {
                 log.error("create file error");
             }
         }
-        storeFiles.add(messageFile);
         currentUsingFile=messageFile;
 
     }
@@ -132,6 +147,43 @@ public class CommitLog {
             }
         }
         return -1L;
+    }
+    public Message readMessage(Long offset, Long length){
+        int fileIndex = judgeIndex(offset);
+        File currentUsingFile = this.files.get(fileIndex);
+        String fileName = currentUsingFile.getName();
+        fileName = fileName.substring(0, fileName.lastIndexOf("."));
+        long messageOffset = offset - Long.parseLong(fileName);
+        return parse2Message(currentUsingFile,messageOffset, length);
+
+    }
+    private Message parse2Message(File currentUsingFile, long messageOffset, Long length) {
+        byte[] bytes = new byte[Math.toIntExact(length)];
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(currentUsingFile,"r");){
+            randomAccessFile.seek(messageOffset);
+            randomAccessFile.read(bytes,0, Math.toIntExact(length));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        KryoSerializer messageSerializer = new KryoSerializer();
+        return messageSerializer.deserialize(bytes, Message.class);
+    }
+
+    private int judgeIndex(Long offset) {
+        ArrayList<File> files = commitLog.getFiles();
+        int index=0;
+        int totalCount=0;
+        for(int i=0;i<files.size();i++){
+            if(totalCount<=offset&&totalCount+files.get(i).length()>offset){
+                break;
+            }else{
+                index++;
+                totalCount+= (int) files.get(i).length();
+            }
+        }
+
+
+        return index;
     }
     public static int getLength(Message message) {
         KryoSerializer kryoSerializer = new KryoSerializer();

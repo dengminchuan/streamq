@@ -5,10 +5,10 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import io.fury.Fury;
 import io.fury.Language;
-import io.fury.ThreadSafeFury;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.message.MessageInfo;
 import me.deve.streamq.common.util.FileUtil;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
@@ -86,16 +86,11 @@ class CommonApplicationTests {
         Message deserialize = (Message) fury.deserialize(serialize);
         System.out.println(deserialize);
     }
-
-    public static void main(String[] args) {
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                System.out.println(111);
-            }
-        },1000,1000);
-        System.out.println("timer end");
+    @Test
+    void testLength(){
+        MessageInfo messageInfo = new MessageInfo(12L, 32L);
+        System.out.println(messageInfo);
     }
+
 }
 

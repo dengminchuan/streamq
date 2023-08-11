@@ -5,38 +5,33 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.common.queue;
 
+import lombok.Getter;
+import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageInfo;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * store message
  */
 public class ProcessQueue {
 
-
-    public ConcurrentLinkedQueue<MessageInfo> getConsumeQueue() {
-        return consumeQueue;
-    }
-
-    private ConcurrentLinkedQueue<MessageInfo> consumeQueue;
-
-
-
-
+    @Getter
+    private CopyOnWriteArrayList<byte[]> consumeQueue=new CopyOnWriteArrayList<>();
     public ProcessQueue(){
-        consumeQueue=new ConcurrentLinkedQueue<>();
+
     }
 
-    public void  add(MessageInfo messageInfo){
-        consumeQueue.add(messageInfo);
+    public Long add(MessageInfo messageInfo){
+        consumeQueue.add(messageInfo.toByteArray());
+        return (long) (consumeQueue.size() - 1);
     }
 
-    @Override
-    public String toString() {
-        return "ProcessQueue{" +
-                "consumeQueue=" + consumeQueue +
-                '}';
+    public MessageInfo readMessage(Long offset){
+        return MessageInfo.fromByteArray(consumeQueue.get(Math.toIntExact(offset)));
     }
+
+
 
 }

@@ -7,6 +7,7 @@ package me.deve.streamq.common.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.deve.streamq.common.constant.MessageConstant;
 import me.deve.streamq.common.queue.ProcessQueue;
@@ -25,6 +26,7 @@ import java.io.IOException;
 public class MessageQueue {
     private String location;
     private static final String MESSAGE_QUEUE_PATH=System.getProperty("file.separator")+"/messageQueue.log";
+    @Getter
     private ProcessQueue processQueue;
 
     public void setMessageQueueInfo(MessageQueueInfo messageQueueInfo) {
@@ -54,9 +56,13 @@ public class MessageQueue {
         }
         messageQueueInfo=new MessageQueueInfo();
     }
-    public boolean add(MessageInfo messageInfo){
-        processQueue.add(messageInfo);
-        return false;
+    public Long add(MessageInfo messageInfo){
+        return processQueue.add(messageInfo);
     }
+    public MessageInfo readMessage(Long offset){
+           return processQueue.readMessage(offset);
+    }
+
+
 
 }

@@ -22,18 +22,9 @@ public class MessageQueueInfo {
         this.id=id;
         this.messageQueueName=messageQueueName;
     }
-    public String getMessageQueueName() {
-        return messageQueueName;
-    }
-
     public void setMessageQueueName(String messageQueueName) {
         this.messageQueueName = messageQueueName;
     }
-
-    public Integer getId() {
-        return id;
-    }
-
     public void setId(Integer id) {
         this.id = id;
     }

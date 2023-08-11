@@ -11,7 +11,6 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.CharsetUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.constant.MessageConstant;
@@ -21,9 +20,8 @@ import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageListenerConcurrently;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @ChannelHandler.Sharable
@@ -33,13 +31,13 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     private ThreadLocal<Long> consumerOffset=new ThreadLocal<>();
 
     public void setCachedMessageCount(Integer cachedMessageCount) {
-        this.cachedMessageCount = cachedMessageCount;
+        this.cachedMessageCount.set(cachedMessageCount);
     }
 
     @Getter
-    private Integer cachedMessageCount=0;
+    private final AtomicReference<Integer> cachedMessageCount = new AtomicReference<>(0);
 
-    private ThreadLocal<ConcurrentLinkedQueue<Message>> cacheMessage=new ThreadLocal<>();
+    private ThreadLocal<LinkedBlockingQueue<Message>> cacheMessage=new ThreadLocal<>();
 
     public void setMessageListener(MessageListenerConcurrently messageListener) {
         this.messageListener = messageListener;
@@ -48,8 +46,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Getter
     private MessageListenerConcurrently messageListener;
-
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf byteBuf= (ByteBuf) msg;
@@ -60,14 +56,14 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
             Message message = functionMessage.getMessage();
-            //todo:store message
-            ConcurrentLinkedQueue<Message> tempCache = cacheMessage.get();
+            System.out.println(message);
+            LinkedBlockingQueue<Message> tempCache = cacheMessage.get();
             tempCache.add(message);
             cacheMessage.set(tempCache);
-            cachedMessageCount++;
+            cachedMessageCount.getAndSet(cachedMessageCount.get() + 1);
             //only push message when previous message return
+            consumerOffset.set(consumerOffset.get()+1);
             startPullMessage(ctx);
-            consumerOffset.set(consumerOffset.get()+functionMessage.getMessageLength());
         }
 
 
@@ -75,15 +71,33 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        if(cacheMessage.get()==null){
+            cacheMessage.set(new LinkedBlockingQueue<>());
+        }
+        if(consumerOffset==null){
+            consumerOffset.set(-1L);
+        }
+        System.out.println("init cache message");
         register2Broker(ctx);
         startPullMessage(ctx);
-        consumeMessage();
+//        consumeMessage(cacheMessage.get());
+
     }
-
-    private void consumeMessage() {
-
-//        messageListener.consumeMessage();
-        cachedMessageCount--;
+    private final Integer CONSUMER_THREAD_COUNT =2;
+    private ThreadPoolExecutor pool=new ThreadPoolExecutor(
+            CONSUMER_THREAD_COUNT,
+            100,
+            100,
+            TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(),new ThreadPoolExecutor.CallerRunsPolicy());
+    private void consumeMessage(LinkedBlockingQueue<Message> messages) {
+        pool.execute(() -> {
+            while(true){
+                Message message = messages.poll();
+                messageListener.consumeMessage(message);
+            }
+        });
+        cachedMessageCount.getAndSet(cachedMessageCount.get() - 1);
     }
 
     private void register2Broker(ChannelHandlerContext ctx) {
@@ -99,9 +113,10 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
      * @param ctx
      */
     public void startPullMessage(ChannelHandlerContext ctx){
-                if(cachedMessageCount<=MessageConstant.PULL_MESSAGE_THRESHOLD){
+                if(cachedMessageCount.get() <=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
+                    functionMessage.setOffset(consumerOffset.get());
                     byte[] pullRequest = kryoSerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));

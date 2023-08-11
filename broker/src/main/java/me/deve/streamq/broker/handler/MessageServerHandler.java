@@ -19,6 +19,7 @@ import me.deve.streamq.broker.MessageQueueController;
 import me.deve.streamq.common.constant.TimerConstant;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
+import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.util.Iterator;
@@ -59,7 +60,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 Map.Entry<ChannelHandlerContext, Long> entry = iterator.next();
                 ChannelHandlerContext ctx = entry.getKey();
                 Long offset = entry.getValue();
-                if(messageQueueController.getCommitLog().getCommitLogOffset()>offset){
+                if(messageQueueController.getConsumeOffset()>offset){
                     pushMessage(offset,ctx);
                     iterator.remove();
                 }
@@ -67,7 +68,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         };
                 pullRequestTable.forEach((channelHandlerContext, offset) -> {
             //check if there have new message
-            if(messageQueueController.getCommitLog().getCommitLogOffset()>offset){
+            if(messageQueueController.getConsumeOffset()>offset){
                 pushMessage(offset,channelHandlerContext);
 
             }
@@ -80,8 +81,11 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
        channelGroup.writeAndFlush(allocator.buffer().writeBytes("first test message".getBytes()));
     }
     public void pushMessage(Long consumerOffset, ChannelHandlerContext ctx){
-           //todo:find message and return
-            
+            Message message = messageQueueController.readMessage(consumerOffset);
+            KryoSerializer messageSerializer = new KryoSerializer();
+            FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE,message);
+            byte[] messageBytes = messageSerializer.serialize(functionMessage);
+            ctx.channel().writeAndFlush(allocator.buffer(messageBytes.length).writeBytes(messageBytes));
     }
 
     @Override
@@ -92,23 +96,20 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         //when producer provide message
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
             Long offset = messageQueueController.add(functionMessage.getMessage());
+            //todo:return OK if add successfully
         }
         else if(functionMessage.getMessageType()==FunctionMessageType.REGISTER_PULL_REQUEST){
             channelGroup.add(ctx.channel());
         }
         else if(functionMessage.getMessageType()==FunctionMessageType.PULL_MESSAGE){
-            //pull message,use long cycle mode
-            //todo:Determine if there is a message.
-            // If there is no message, store the request and wait until there is a message before returning
-            //exists new message
-            if(consumerOffset <messageQueueController.getCommitLog().getCommitLogOffset()){
+            System.out.println("consumer offset:"+consumerOffset+" commit offset"+messageQueueController.getConsumeOffset());
+            if(consumerOffset <messageQueueController.getConsumeOffset()){
                 pushMessage(consumerOffset,ctx);
             }else{
                 pullRequestTable.put(ctx, consumerOffset);
             }
 
         }
-
 
     }
     public byte[] getMessageBytes(Object msg){
