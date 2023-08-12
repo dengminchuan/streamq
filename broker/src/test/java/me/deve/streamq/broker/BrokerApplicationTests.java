@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -88,6 +89,24 @@ class BrokerApplicationTests {
             System.out.println(file.getName());
             // 在这里可以对匹配的文件进行进一步的操作
         }
+
+    }
+    @Test
+    void testKryo(){
+        Message message = new Message("test", "test message".getBytes());
+        KryoSerializer kryoSerializer = new KryoSerializer();
+        byte[] serialize = kryoSerializer.serialize(message);
+        byte[] bytes = "wow".getBytes();
+        byte[] newSerialize = new byte[serialize.length+bytes.length];
+        for(int i=0;i<serialize.length;i++){
+            newSerialize[i]=serialize[i];
+        }
+        for(int i=serialize.length;i<bytes.length+serialize.length;i++){
+            newSerialize[i]=bytes[i-serialize.length];
+        }
+        Message deserialize = kryoSerializer.deserialize(newSerialize, Message.class);
+        System.out.println(deserialize);
+
     }
 
 }

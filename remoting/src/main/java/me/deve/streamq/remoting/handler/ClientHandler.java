@@ -20,7 +20,8 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(Unpooled.copiedBuffer("hello server", CharsetUtil.UTF_8));
+        ctx.writeAndFlush(Unpooled.copiedBuffer("hello server1", CharsetUtil.UTF_8));
+        ctx.writeAndFlush(Unpooled.copiedBuffer("hello server2", CharsetUtil.UTF_8));
     }
 
     @Override

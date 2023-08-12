@@ -28,16 +28,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf byteBuf= (ByteBuf) msg;
-        System.out.println("ip地址为:"+ctx.channel().remoteAddress()+"的客户端发送了:"+byteBuf.toString(CharsetUtil.UTF_8));
+        System.out.println(byteBuf.toString(CharsetUtil.UTF_8));
     }
 
-    /**
-     * 读取结束后写回
-     */
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(Unpooled.copiedBuffer("hello 客户端~",CharsetUtil.UTF_8));
-    }
 
     /**
      * 处理异常

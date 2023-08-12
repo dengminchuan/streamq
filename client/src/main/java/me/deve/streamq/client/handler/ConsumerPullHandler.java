@@ -8,10 +8,12 @@ package me.deve.streamq.client.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.CharsetUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.constant.MessageConstant;
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 @ChannelHandler.Sharable
 public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
+
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
 
     private final ConcurrentHashMap<ChannelHandlerContext,Integer> consumerOffsetTable=new ConcurrentHashMap<>();
@@ -70,9 +73,13 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        register2Broker(ctx);
-        startPullMessage(ctx);
+//        register2Broker(ctx);
+//        startPullMessage(ctx);
 //        consumeMessage(cacheMessage.get());
+        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server1\n".getBytes(CharsetUtil.UTF_8)));
+        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server2\n".getBytes(CharsetUtil.UTF_8)));
+        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server3\n".getBytes(CharsetUtil.UTF_8)));
+
 
     }
     private final Integer CONSUMER_THREAD_COUNT =2;
@@ -111,9 +118,9 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                     functionMessage.setOffset(Long.valueOf(consumerOffsetTable.getOrDefault(ctx,-1)));
                     byte[] pullRequest = kryoSerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
-                    ChannelFuture channelFuture = ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
-                    System.out.println("pull message"+channelFuture.isSuccess());
+                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
                 }
+
     }
 
 

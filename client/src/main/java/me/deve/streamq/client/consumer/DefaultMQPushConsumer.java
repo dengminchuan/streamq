@@ -9,6 +9,8 @@ import com.esotericsoftware.kryo.Kryo;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.StringDecoder;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.client.handler.ConsumerGetBrokerHandler;
 import me.deve.streamq.client.handler.ConsumerPullHandler;

@@ -9,6 +9,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.config.NettyClientConfig;
@@ -44,6 +45,7 @@ public class NettyClient {
         initialize();
     }
 
+
     /**
      * init netty server
      */
@@ -60,6 +62,13 @@ public class NettyClient {
                     }
                 });
     }
+
+    public void setUseLineBasedFrameDecoder(Boolean useLineBasedFrameDecoder) {
+        this.useLineBasedFrameDecoder = useLineBasedFrameDecoder;
+    }
+
+    private Boolean useLineBasedFrameDecoder = false;
+
     public void start(){
         try {
             //连接

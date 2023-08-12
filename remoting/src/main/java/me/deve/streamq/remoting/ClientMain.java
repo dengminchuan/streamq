@@ -20,11 +20,8 @@ import java.net.InetSocketAddress;
  */
 public class ClientMain {
     public static void main(String[] args) {
-            NettyClient nettyClient = new NettyClient(new NioEventLoopGroup(), new Bootstrap(), new NettyClientConfig(new KryoInetAddress()), new ClientHandler());
-            InetSocketAddress[]inetSocketAddress = new InetSocketAddress[2];
-            inetSocketAddress[0]=new InetSocketAddress("127.0.0.1",8810);
-            inetSocketAddress[1]=new InetSocketAddress("127.0.0.1",8811);
-
+            NettyClient nettyClient = new NettyClient(new NioEventLoopGroup(), new Bootstrap(), new NettyClientConfig(new KryoInetAddress("127.0.0.1",8810)), new ClientHandler());
+            nettyClient.start();
 
     }
 }

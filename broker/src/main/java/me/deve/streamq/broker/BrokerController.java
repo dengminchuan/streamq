@@ -52,7 +52,7 @@ public class BrokerController {
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
         ServerBootstrap serverBootstrap = new ServerBootstrap();
-        nettyServer=new NettyServer(bossGroup,workerGroup,serverBootstrap,nettyServerConfig,serverHandlers);
+        nettyServer=new NettyServer(bossGroup,workerGroup,serverBootstrap,nettyServerConfig,true,serverHandlers);
 
     }
 

@@ -5,11 +5,14 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.remoting.netty;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import lombok.Data;
+import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.config.NettyServerConfig;
 import me.deve.streamq.remoting.handler.ServerHandler;
 @Data
@@ -22,12 +25,22 @@ public class NettyServer {
     private ServerBootstrap serverBootstrap;
     private NettyServerConfig nettyServerConfig;
     private ChannelInboundHandlerAdapter []handlers;
+    private Boolean useLineBasedFrameDecoder=false;
     public NettyServer (NioEventLoopGroup bossGroup, NioEventLoopGroup workerGroup, ServerBootstrap serverBootstrap, NettyServerConfig nettyServerConfig, ChannelInboundHandlerAdapter... handlers){
         this.bossGroup=bossGroup;
         this.workerGroup=workerGroup;
         this.serverBootstrap=serverBootstrap;
         this.nettyServerConfig=nettyServerConfig;
         this.handlers=handlers;
+        initialize();
+    }
+    public NettyServer (NioEventLoopGroup bossGroup, NioEventLoopGroup workerGroup, ServerBootstrap serverBootstrap, NettyServerConfig nettyServerConfig, Boolean useLineBasedFrameDecoder ,ChannelInboundHandlerAdapter... handlers){
+        this.bossGroup=bossGroup;
+        this.workerGroup=workerGroup;
+        this.serverBootstrap=serverBootstrap;
+        this.nettyServerConfig=nettyServerConfig;
+        this.handlers=handlers;
+        this.useLineBasedFrameDecoder=useLineBasedFrameDecoder;
         initialize();
     }
     private void initialize() {
@@ -40,10 +53,13 @@ public class NettyServer {
                 childHandler(new ChannelInitializer<>() {
             @Override
             protected void initChannel(Channel channel) throws Exception {
+                if(useLineBasedFrameDecoder){
+                    channel.pipeline().addLast(new LineBasedFrameDecoder(1024));
+                    System.out.println("load LineBasedFrameDecoder");
+                }
                 for (int i = 0; i < handlers.length; i++) {
                     channel.pipeline().addLast(handlers[i]);
                 }
-
             }
         });
     }
