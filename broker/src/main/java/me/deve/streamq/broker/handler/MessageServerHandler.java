@@ -81,7 +81,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
        channelGroup.writeAndFlush(allocator.buffer().writeBytes("first test message".getBytes()));
     }
     public void pushMessage(Long consumerOffset, ChannelHandlerContext ctx){
-            Message message = messageQueueController.readMessage(consumerOffset);
+            Message message = messageQueueController.readMessage(consumerOffset+1);
             KryoSerializer messageSerializer = new KryoSerializer();
             FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE,message);
             byte[] messageBytes = messageSerializer.serialize(functionMessage);
@@ -93,15 +93,17 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         byte[] array = getMessageBytes(msg);
         FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
         Long consumerOffset = functionMessage.getOffset();
+        FunctionMessageType messageType = functionMessage.getMessageType();
         //when producer provide message
-        if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
+        System.out.println(messageType);
+        if(messageType ==FunctionMessageType.NORMAL_MESSAGE){
             Long offset = messageQueueController.add(functionMessage.getMessage());
             //todo:return OK if add successfully
         }
-        else if(functionMessage.getMessageType()==FunctionMessageType.REGISTER_PULL_REQUEST){
+        else if(messageType ==FunctionMessageType.REGISTER_PULL_REQUEST){
             channelGroup.add(ctx.channel());
         }
-        else if(functionMessage.getMessageType()==FunctionMessageType.PULL_MESSAGE){
+        else if(messageType ==FunctionMessageType.PULL_MESSAGE){
             System.out.println("consumer offset:"+consumerOffset+" commit offset"+messageQueueController.getConsumeOffset());
             if(consumerOffset <messageQueueController.getConsumeOffset()){
                 pushMessage(consumerOffset,ctx);
@@ -124,9 +126,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.info("netty server error:"+cause);
-    }
+
 }
 

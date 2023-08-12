@@ -42,7 +42,7 @@ public class MessageQueueController {
         Long offset;
         synchronized (this) {
             offset=commitLog.add(message);
-            MessageInfo messageInfo = new MessageInfo(offset, (long) CommitLog.getLength(message));
+            MessageInfo messageInfo = new MessageInfo(offset, (long) CommitLog.getLength(message),1);
             consumeOffset=offset = messageQueue.add(messageInfo);
         }
         return offset ;

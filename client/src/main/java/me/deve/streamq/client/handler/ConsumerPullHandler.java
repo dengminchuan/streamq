@@ -8,6 +8,7 @@ package me.deve.streamq.client.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -69,7 +70,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        System.out.println("init cache message");
         register2Broker(ctx);
         startPullMessage(ctx);
 //        consumeMessage(cacheMessage.get());
@@ -111,7 +111,8 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                     functionMessage.setOffset(Long.valueOf(consumerOffsetTable.getOrDefault(ctx,-1)));
                     byte[] pullRequest = kryoSerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
-                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
+                    ChannelFuture channelFuture = ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
+                    System.out.println("pull message"+channelFuture.isSuccess());
                 }
     }
 

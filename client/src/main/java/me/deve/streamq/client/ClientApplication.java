@@ -26,7 +26,7 @@ public class ClientApplication {
         defaultMQConsumer.start();
 //        DefaultMQProducer defaultMQProducer = new DefaultMQProducer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
 //        defaultMQProducer.start();
-//        defaultMQProducer.send(new Message("test topic","test".getBytes()));
+//        defaultMQProducer.send(new Message("test topic","test".getBytes(),new String[]{"test"}));
 
 
 
