@@ -14,6 +14,8 @@ import me.devedmc.streamq.commitlog.CommitLog;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 
 class BrokerApplicationTests {
@@ -68,6 +70,24 @@ class BrokerApplicationTests {
         byte[] bytes = new FileInputStream(file).readAllBytes();
         ProcessQueue deserialize = kryoSerializer.deserialize(bytes, ProcessQueue.class);
         System.out.println(deserialize.toString());
+    }
+    @Test
+    void testGetFile(){
+        File folder = new File("C:\\Users\\lv jiang er hao\\Desktop\\java\\git\\streamq");
+        System.out.println(folder.getAbsolutePath());
+        File[] files = folder.listFiles();
+        List<File> matchingFiles = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile() && file.getName().matches("\\d{20}\\.bin")) {
+                matchingFiles.add(file);
+            }
+        }
+
+        // 处理匹配的文件
+        for (File file : matchingFiles) {
+            System.out.println(file.getName());
+            // 在这里可以对匹配的文件进行进一步的操作
+        }
     }
 
 }

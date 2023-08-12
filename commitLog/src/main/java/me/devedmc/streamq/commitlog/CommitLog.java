@@ -14,6 +14,7 @@ import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static me.devedmc.streamq.commitlog.FilePath.*;
@@ -30,6 +31,7 @@ public class CommitLog {
 
     private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
 
+    private ArrayList<File> files=new ArrayList<>();
 
     @Getter
     private Long commitLogOffset =0L;
@@ -45,8 +47,7 @@ public class CommitLog {
     private static volatile CommitLog commitLog;
 
     private Boolean isAdd=false;
-    @Getter
-    private volatile ArrayList<File> files=new ArrayList<>();
+
 
     private final ConcurrentLinkedQueue<Message> pageCache=new ConcurrentLinkedQueue<>();
     private ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
@@ -60,21 +61,10 @@ public class CommitLog {
             persist();
             File offsetFile = new File(location + COMMITLOG_OFFSET);
             FileUtil.string2File(offsetFile, commitLogOffset.toString(),false);
-            File managerFile=new File(location+MANAGER_FILE_PATH);
-            FileUtil.write2Binary(managerFile,kryoSerializer.serialize(files),false);
+            System.out.println(files.size());
             return null;
         }));
-        File managerFile=new File(location+MANAGER_FILE_PATH);
-        if(managerFile.exists()){
-                try (FileInputStream fis = new FileInputStream(managerFile)){
-                    files = kryoSerializer.deserialize(fis.readAllBytes(), ArrayList.class);
-                    System.out.println("load files,files size:"+files.size());
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else{
-           files=new ArrayList<>();
-        }
+        initFiles();
         File indexFile = new File(location + FILE_INDEX_CONF_PATH);
         if(indexFile.exists()){
             previousUsingFileIndex = Integer.parseInt(FileUtil.file2String(indexFile));
@@ -91,6 +81,17 @@ public class CommitLog {
 
     }
 
+    private void initFiles() {
+        File folder = new File(location);
+        File[] files = folder.listFiles();
+        for (File file : files) {
+            if (file.isFile() && file.getName().matches("\\d{20}\\.bin")) {
+                this.files.add(file);
+            }
+
+        }
+
+    }
 
 
     private void updateMessageFile(Integer fileIndex){
@@ -165,7 +166,7 @@ public class CommitLog {
     }
 
     private int judgeIndex(Long offset) {
-        ArrayList<File> files = commitLog.getFiles();
+        ArrayList<File> files = this.files;
         int index=0;
         int totalCount=0;
         for(int i=0;i<files.size();i++){
