@@ -24,12 +24,6 @@ public class CommitLog {
     private String location=System.getProperty("user.dir");;
 
 
-//    private final String FILE_INDEX_CONF_PATH=System.getProperty("file.separator")+"fileIndex.conf";
-//    private final String COMMITLOG_OFFSET=System.getProperty("file.separator")+"commitlogOffset.conf";
-//
-//    private final String MESSAGE_STORAGE_FILE_PATH=System.getProperty("file.separator");
-
-
     private Integer previousUsingFileIndex=0;
 
     private File currentUsingFile;
@@ -52,7 +46,7 @@ public class CommitLog {
 
     private Boolean isAdd=false;
     @Getter
-    private ArrayList<File> files=new ArrayList<>();
+    private volatile ArrayList<File> files=new ArrayList<>();
 
     private final ConcurrentLinkedQueue<Message> pageCache=new ConcurrentLinkedQueue<>();
     private ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
@@ -74,6 +68,7 @@ public class CommitLog {
         if(managerFile.exists()){
                 try (FileInputStream fis = new FileInputStream(managerFile)){
                     files = kryoSerializer.deserialize(fis.readAllBytes(), ArrayList.class);
+                    System.out.println("load files,files size:"+files.size());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

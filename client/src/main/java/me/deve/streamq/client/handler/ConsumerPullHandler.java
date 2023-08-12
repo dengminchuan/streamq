@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
 
-    private ThreadLocal<Long> consumerOffset=new ThreadLocal<>();
+    private final ConcurrentHashMap<ChannelHandlerContext,Integer> consumerOffsetTable=new ConcurrentHashMap<>();
 
     public void setCachedMessageCount(Integer cachedMessageCount) {
         this.cachedMessageCount.set(cachedMessageCount);
@@ -37,7 +37,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
     @Getter
     private final AtomicReference<Integer> cachedMessageCount = new AtomicReference<>(0);
 
-    private ThreadLocal<LinkedBlockingQueue<Message>> cacheMessage=new ThreadLocal<>();
+    private final LinkedBlockingQueue<Message> cacheMessage=new LinkedBlockingQueue<>();
 
     public void setMessageListener(MessageListenerConcurrently messageListener) {
         this.messageListener = messageListener;
@@ -57,12 +57,10 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
             Message message = functionMessage.getMessage();
             System.out.println(message);
-            LinkedBlockingQueue<Message> tempCache = cacheMessage.get();
-            tempCache.add(message);
-            cacheMessage.set(tempCache);
+            cacheMessage.add(message);
             cachedMessageCount.getAndSet(cachedMessageCount.get() + 1);
             //only push message when previous message return
-            consumerOffset.set(consumerOffset.get()+1);
+            consumerOffsetTable.put(ctx,consumerOffsetTable.getOrDefault(ctx,-1)+1);
             startPullMessage(ctx);
         }
 
@@ -71,12 +69,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if(cacheMessage.get()==null){
-            cacheMessage.set(new LinkedBlockingQueue<>());
-        }
-        if(consumerOffset==null){
-            consumerOffset.set(-1L);
-        }
         System.out.println("init cache message");
         register2Broker(ctx);
         startPullMessage(ctx);
@@ -116,13 +108,11 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                 if(cachedMessageCount.get() <=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
-                    functionMessage.setOffset(consumerOffset.get());
+                    functionMessage.setOffset(Long.valueOf(consumerOffsetTable.getOrDefault(ctx,-1)));
                     byte[] pullRequest = kryoSerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
                 }
-
-
     }
 
 
