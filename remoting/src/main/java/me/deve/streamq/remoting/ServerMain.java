@@ -17,6 +17,7 @@ import me.deve.streamq.remoting.netty.NettyServer;
  */
 public class ServerMain {
     public static void main(String[] args) {
-        new Thread(() -> new NettyServer(new NioEventLoopGroup(),new NioEventLoopGroup(),new ServerBootstrap(),new NettyServerConfig(8810),new ServerHandler()).start()).start();
+        NettyServer nettyServer = new NettyServer(new NioEventLoopGroup(), new NioEventLoopGroup(), new ServerBootstrap(), new NettyServerConfig(8810), true, new ServerHandler());
+        new Thread(nettyServer::start).start();
     }
 }

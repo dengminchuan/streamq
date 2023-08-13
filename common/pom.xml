@@ -42,7 +42,7 @@
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.2.0</version>
+            <version>5.2.1</version>
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>org.furyio</groupId>
             <artifactId>fury-core</artifactId>
-            <version>0.1.0-alpha.1</version>
+            <version>0.1.0</version>
         </dependency>
 
     </dependencies>

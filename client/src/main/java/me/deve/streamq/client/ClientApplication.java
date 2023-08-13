@@ -14,22 +14,22 @@ import java.util.List;
 public class ClientApplication {
 
     public static void main(String[] args) {
-//            DefaultMQPushConsumer defaultMQConsumer = new DefaultMQPushConsumer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
-//            defaultMQConsumer.subscribe("test topic");
-//            defaultMQConsumer.registerMessageListener(new MessageListenerConcurrently() {
-//                @Override
-//                public ConsumeConcurrentlyStatus consumeMessage(Message message) {
-//                    System.out.println(message);
-//                    return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
-//                }
-//            });
-//            defaultMQConsumer.start();
-        DefaultMQProducer defaultMQProducer = new DefaultMQProducer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
-        defaultMQProducer.setDefaultTopic("test topic");
-        defaultMQProducer.start();
-        for (int i=0;i<100;i++) {
-            defaultMQProducer.continuousSend(new Message("test topic","test message".getBytes(),new String[]{"test"}));
-        }
+            DefaultMQPushConsumer defaultMQConsumer = new DefaultMQPushConsumer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
+            defaultMQConsumer.subscribe("test topic");
+            defaultMQConsumer.registerMessageListener(new MessageListenerConcurrently() {
+                @Override
+                public ConsumeConcurrentlyStatus consumeMessage(Message message) {
+                    System.out.println(message);
+                    return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                }
+            });
+            defaultMQConsumer.start();
+//        DefaultMQProducer defaultMQProducer = new DefaultMQProducer(new NettyClientConfig(new KryoInetAddress("127.0.0.1", 10088)));
+//        defaultMQProducer.setDefaultTopic("test topic");
+//        defaultMQProducer.start();
+//        for (int i=0;i<100;i++) {
+//            defaultMQProducer.continuousSend(new Message("test topic","test message".getBytes(),new String[]{"test"}));
+//        }
     }
 
 }

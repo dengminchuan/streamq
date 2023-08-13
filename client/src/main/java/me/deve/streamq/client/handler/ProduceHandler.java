@@ -37,11 +37,11 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
         byte[] serializeArr = kryoSerializer.serialize(functionMessage);
         int messageLength = serializeArr.length;
         ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
+        ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
     }
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         this.ctx=ctx;
-
     }
 
 

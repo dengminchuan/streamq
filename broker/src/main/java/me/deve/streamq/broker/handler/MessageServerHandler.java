@@ -21,6 +21,7 @@ import me.deve.streamq.common.constant.TimerConstant;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.util.Iterator;
@@ -41,7 +42,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private MessageQueueController messageQueueController;
-    private final static KryoSerializer kryoSerializer = new KryoSerializer();
 
     private volatile ChannelGroup channelGroup=new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
@@ -62,6 +62,7 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 ChannelHandlerContext ctx = entry.getKey();
                 Long offset = entry.getValue();
                 if(messageQueueController.getConsumeOffset()>offset){
+                    System.out.println("table push offset="+offset+" "+messageQueueController.getConsumeOffset());
                     pushMessage(offset,ctx);
                     iterator.remove();
                 }
@@ -80,16 +81,18 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
             byte[] messageBytes = messageSerializer.serialize(functionMessage);
             ctx.channel().writeAndFlush(allocator.buffer(messageBytes.length).writeBytes(messageBytes));
     }
+    private FurySerializer furySerializer = new FurySerializer();
+    int cnt=0;
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void  channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf byteBuf= (ByteBuf) msg;
         byte[] array = getMessageBytes(msg);
-        FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
+        FunctionMessage functionMessage = furySerializer.deserialize(array,FunctionMessage.class);
         Long consumerOffset = functionMessage.getOffset();
+        pushMessage(consumerOffset,ctx);
+        System.out.println(cnt++);
         FunctionMessageType messageType = functionMessage.getMessageType();
-        //when producer provide message
-        System.out.println(messageType);
         if(messageType ==FunctionMessageType.NORMAL_MESSAGE){
             Long offset = messageQueueController.add(functionMessage.getMessage());
             //todo:return OK if add successfully
@@ -108,6 +111,12 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
         }
 
     }
+
+    private FunctionMessage getFunctionMessage(byte[] array) {
+        KryoSerializer kryoSerializer = new KryoSerializer();
+        return kryoSerializer.deserialize(array, FunctionMessage.class);
+    }
+
     public byte[] getMessageBytes(Object msg){
         ByteBuf byteBuf= (ByteBuf) msg;
         byte[] array = new byte[byteBuf.readableBytes()];

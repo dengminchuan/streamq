@@ -21,6 +21,7 @@ import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageListenerConcurrently;
+import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.util.concurrent.*;
@@ -94,11 +95,11 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         });
         cachedMessageCount.getAndSet(cachedMessageCount.get() - 1);
     }
+    private FurySerializer furySerializer = new FurySerializer();
 
     private void register2Broker(ChannelHandlerContext ctx) {
-        KryoSerializer kryoSerializer = new KryoSerializer();
         FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.REGISTER_PULL_REQUEST);
-        byte[] serializeArr = kryoSerializer.serialize(functionMessage);
+        byte[] serializeArr = furySerializer.serialize(functionMessage);
         int messageLength = serializeArr.length;
         ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
         ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
@@ -110,10 +111,10 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
      */
     public void startPullMessage(ChannelHandlerContext ctx){
                 if(cachedMessageCount.get() <=MessageConstant.PULL_MESSAGE_THRESHOLD){
-                    KryoSerializer kryoSerializer = new KryoSerializer();
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
                     functionMessage.setOffset(Long.valueOf(consumerOffsetTable.getOrDefault(ctx,-1)));
-                    byte[] pullRequest = kryoSerializer.serialize(functionMessage);
+                    System.out.println("----functionmessage:"+functionMessage);
+                    byte[] pullRequest = furySerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));

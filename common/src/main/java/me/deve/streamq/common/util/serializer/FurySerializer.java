@@ -8,28 +8,33 @@ package me.deve.streamq.common.util.serializer;
 import io.fury.Fury;
 import io.fury.Language;
 import io.fury.ThreadSafeFury;
+import me.deve.streamq.common.message.FunctionMessage;
+import me.deve.streamq.common.message.FunctionMessageType;
+import me.deve.streamq.common.message.Message;
+import me.deve.streamq.common.message.MessageType;
 
-/**
- * todo:change to FurySerializer when it official release
- */
+
 public class FurySerializer implements Serializer{
 
     private Fury fury=Fury.builder()
             .withLanguage(Language.JAVA)
-            .withRefTracking(true)
-            .requireClassRegistration(false)
             .build();
-
+    public FurySerializer(){
+        fury.register(Message.class);
+        fury.register(MessageType.class);
+        fury.register(FunctionMessage.class);
+        fury.register(FunctionMessageType.class);
+    }
 
     @Override
     public byte[] serialize(Object object) {
-
-
-        return new byte[0];
+       return fury.serialize(object);
     }
 
     @Override
     public <T> T deserialize(byte[] byteArray, Class<T> clazz) {
-        return null;
+        T deserialize = (T) fury.deserialize(byteArray);
+        fury.reset();
+        return (T) deserialize;
     }
 }

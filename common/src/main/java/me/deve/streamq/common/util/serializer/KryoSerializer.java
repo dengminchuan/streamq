@@ -27,12 +27,12 @@ public class KryoSerializer implements  Serializer{
      * return a no-registry kryo object
      */
     private Kryo kryo;
-    private final ThreadLocal<Kryo> kryoThreadLocal=ThreadLocal.withInitial(new Supplier<Kryo>() {
+    private final ThreadLocal<Kryo> kryoThreadLocal=ThreadLocal.withInitial(new Supplier<>() {
         @Override
         public Kryo get() {
             kryo = new Kryo();
-            kryo.setRegistrationRequired(false);
             kryo.setReferences(true);
+            kryo.setRegistrationRequired(false);
             registerAllClass(kryo);
             return kryo;
         }
@@ -59,8 +59,8 @@ public class KryoSerializer implements  Serializer{
                 ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
                 Input input = new Input(byteArrayInputStream)) {
             Kryo kryo = kryoThreadLocal.get();
-            kryoThreadLocal.remove();
             Object o = kryo.readObject(input, clazz);
+            kryoThreadLocal.remove();
             return clazz.cast(o);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -5,12 +5,21 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.remoting.handler;
 
+import io.fury.Fury;
+import io.fury.Language;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
+import me.deve.streamq.common.message.FunctionMessage;
+import me.deve.streamq.common.message.FunctionMessageType;
+import me.deve.streamq.common.util.serializer.FurySerializer;
+import me.deve.streamq.common.util.serializer.KryoSerializer;
+
 @ChannelHandler.Sharable
 public class ClientHandler extends ChannelInboundHandlerAdapter {
     /**
@@ -18,10 +27,15 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
      * @param ctx
      * @throws Exception
      */
+    private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(Unpooled.copiedBuffer("hello server1", CharsetUtil.UTF_8));
-        ctx.writeAndFlush(Unpooled.copiedBuffer("hello server2", CharsetUtil.UTF_8));
+        FurySerializer fury = new FurySerializer();
+        for(int i=0;i<1000;i++){
+              byte[] serialize = fury.serialize(new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE));
+              ctx.channel().writeAndFlush(allocator.buffer().writeBytes(serialize));
+              ctx.channel().writeAndFlush(allocator.buffer().writeBytes("\n".getBytes()));
+          }
     }
 
     @Override
@@ -30,8 +44,4 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         System.out.println("server reply:"+byteBuf.toString(CharsetUtil.UTF_8));
     }
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.close();
-    }
 }

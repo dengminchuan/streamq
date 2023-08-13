@@ -9,14 +9,16 @@ package me.deve.streamq.common.message;
 
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.IdUtil;
+import me.deve.streamq.common.util.serializer.Serializer;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 
 /**
  * 消息对象
  */
-public class Message {
+public class Message implements Serializable {
 
 
 
