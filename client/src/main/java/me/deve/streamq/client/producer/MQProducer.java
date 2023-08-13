@@ -7,11 +7,14 @@ package me.deve.streamq.client.producer;
 
 
 import me.deve.streamq.client.message.MessageQueueSelector;
+import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.client.msgstrategy.BrokerChooseStrategy;
 
-public interface MQProducer {
+import java.util.HashMap;
+import java.util.List;
 
+public interface MQProducer {
 
 
     void start();

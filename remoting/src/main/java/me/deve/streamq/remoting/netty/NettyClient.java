@@ -9,22 +9,24 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.config.NettyClientConfig;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 @Slf4j
 public class NettyClient {
     private NioEventLoopGroup eventExecutors;
     private Bootstrap bootstrap;
+
+    public void setNettyClientConfig(NettyClientConfig nettyClientConfig) {
+        this.nettyClientConfig = nettyClientConfig;
+    }
+
     private NettyClientConfig nettyClientConfig;
 
     private ChannelInboundHandlerAdapter[] handler;
@@ -72,14 +74,27 @@ public class NettyClient {
     public void start(){
         try {
             //连接
+            //sync()是转异步为同步方法
+            //等待网络组件启动完成
             ChannelFuture cf = bootstrap.connect(nettyClientConfig.getInetAddress().getInetSocketAddress()).sync();
+            //等待网络组件关闭完成
             cf.channel().closeFuture().sync();
+
         } catch (InterruptedException e) {
             log.warn("connect error,error message:"+e.getMessage());
         }
         finally {
             eventExecutors.shutdownGracefully();
         }
+    }
+    public void connectWithoutWaitForClose(){
+        try {
+            ChannelFuture cf = bootstrap.connect(nettyClientConfig.getInetAddress().getInetSocketAddress()).sync();
+
+        } catch (InterruptedException e) {
+            log.warn("connect error,error message:"+e.getMessage());
+        }
+
     }
 
     public void startMultiple(List<KryoInetAddress> kryoInetAddressList){

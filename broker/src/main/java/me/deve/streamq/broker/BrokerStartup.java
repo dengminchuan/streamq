@@ -36,7 +36,6 @@ public class BrokerStartup {
         }
     }
     public static void main(String[] args) {
-        //set handler
         BrokerUploadHandler brokerUploadHandler = new BrokerUploadHandler(nettyClientConfig,brokerConfig,nettyServerConfig);
         MessageServerHandler messageServerHandler = new MessageServerHandler();
         createMessageQueue(messageServerHandler);
@@ -69,7 +68,7 @@ public class BrokerStartup {
     private static void parseAndLoadArgs(String[] args) {
 
          brokerConfig=new BrokerConfig();
-        //parse and load args to config
+        //todo:parse and load args to config
 
     }
     public static void setClientHandler(ChannelInboundHandlerAdapter ...outHandlers){

@@ -67,13 +67,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
         };
-                pullRequestTable.forEach((channelHandlerContext, offset) -> {
-            //check if there have new message
-            if(messageQueueController.getConsumeOffset()>offset){
-                pushMessage(offset,channelHandlerContext);
-
-            }
-        });
         checkPullRequestService.scheduleWithFixedDelay(checkRequestTask,0,TimerConstant.CHECK_PULL_REQUEST_TABLE_DELAY, TimeUnit.MILLISECONDS);
     }
 
@@ -91,30 +84,28 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf byteBuf= (ByteBuf) msg;
-        System.out.println("accept message");
-        System.out.println(byteBuf.toString(CharsetUtil.UTF_8));
-//        byte[] array = getMessageBytes(msg);
-//        FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
-//        Long consumerOffset = functionMessage.getOffset();
-//        FunctionMessageType messageType = functionMessage.getMessageType();
-//        //when producer provide message
-//        System.out.println(messageType);
-//        if(messageType ==FunctionMessageType.NORMAL_MESSAGE){
-//            Long offset = messageQueueController.add(functionMessage.getMessage());
-//            //todo:return OK if add successfully
-//        }
-//        else if(messageType ==FunctionMessageType.REGISTER_PULL_REQUEST){
-//            channelGroup.add(ctx.channel());
-//        }
-//        else if(messageType ==FunctionMessageType.PULL_MESSAGE){
-//            System.out.println("consumer offset:"+consumerOffset+" commit offset"+messageQueueController.getConsumeOffset());
-//            if(consumerOffset <messageQueueController.getConsumeOffset()){
-//                pushMessage(consumerOffset,ctx);
-//            }else{
-//                pullRequestTable.put(ctx, consumerOffset);
-//            }
-//
-//        }
+        byte[] array = getMessageBytes(msg);
+        FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
+        Long consumerOffset = functionMessage.getOffset();
+        FunctionMessageType messageType = functionMessage.getMessageType();
+        //when producer provide message
+        System.out.println(messageType);
+        if(messageType ==FunctionMessageType.NORMAL_MESSAGE){
+            Long offset = messageQueueController.add(functionMessage.getMessage());
+            //todo:return OK if add successfully
+        }
+        else if(messageType ==FunctionMessageType.REGISTER_PULL_REQUEST){
+            channelGroup.add(ctx.channel());
+        }
+        else if(messageType ==FunctionMessageType.PULL_MESSAGE){
+            System.out.println("consumer offset:"+consumerOffset+" commit offset"+messageQueueController.getConsumeOffset());
+            if(consumerOffset <messageQueueController.getConsumeOffset()){
+                pushMessage(consumerOffset,ctx);
+            }else{
+                pullRequestTable.put(ctx, consumerOffset);
+            }
+
+        }
 
     }
     public byte[] getMessageBytes(Object msg){

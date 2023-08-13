@@ -7,10 +7,10 @@ package me.deve.streamq.client.producer;
 
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.nio.NioEventLoopGroup;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import me.deve.streamq.client.handler.ClientHandler;
+import me.deve.streamq.client.handler.ServerFindClientHandler;
 import me.deve.streamq.client.handler.ProduceHandler;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.client.msgstrategy.BrokerChooseStrategy;
@@ -22,12 +22,7 @@ import me.deve.streamq.remoting.thread.NettyClientThread;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.*;
 
 import static me.deve.streamq.client.util.ClientUtil.chooseBroker;
 
@@ -53,17 +48,13 @@ public class DefaultMQProducer implements MQProducer{
 
     private NettyClientConfig messageSendClientConfig;
 
-    private final ClientHandler clientHandler=new ClientHandler();
+    private final ServerFindClientHandler serverFindClientHandler =new ServerFindClientHandler();
 
     private final ProduceHandler produceHandler=new ProduceHandler();
 
-    public static HashMap<String, List<Broker>> topicRouteData;
+    public  volatile HashMap<String, List<Broker>> topicRouteData;
 
-    private final ReentrantLock lock=new ReentrantLock();
-
-    private Condition condition;
-
-    private final Semaphore semaphore=new Semaphore(0);
+    private CountDownLatch latch=new CountDownLatch(1);
 
     private BrokerChooseStrategy strategy= BrokerChooseStrategy.RANDOM;
 
@@ -79,8 +70,10 @@ public class DefaultMQProducer implements MQProducer{
 
     public DefaultMQProducer(NettyClientConfig nettyClientConfig){
         this.serverFindClientConfig =nettyClientConfig;
-        this.clientHandler.setSemaphore(semaphore);
-        condition = lock.newCondition();
+        serverFindClientHandler.setProducer(this);
+        serverFindClientHandler.setLatch(latch);
+        serverFindClient=new NettyClient(new NioEventLoopGroup(),new Bootstrap(),serverFindClientConfig, serverFindClientHandler);
+        messageSendClient=new NettyClient(new NioEventLoopGroup(),new Bootstrap(),messageSendClientConfig,produceHandler);
     }
 
     /**
@@ -88,23 +81,29 @@ public class DefaultMQProducer implements MQProducer{
      */
     @Override
     public void start() {
-        createAndStartClient(serverFindClient,serverFindClientConfig,clientHandler);
+       serverFindClient.connectWithoutWaitForClose();
         try {
-            //wait clientHandler success
-            semaphore.acquire();
+            latch.await();
         } catch (InterruptedException e) {
-            log.error("obtain semaphore failed,msg:"+e.getMessage());
+            log.error("can not get topicRouteData");
+        }
+        if(defaultTopic!=null){
+             defaultBrokerAddress = chooseBroker(strategy,topicRouteData, defaultTopic);
+             defaultSetting();
         }
 
     }
 
-
-
-    private void createAndStartClient(NettyClient nettyClient, NettyClientConfig clientConfig, ChannelInboundHandlerAdapter handler) {
-        nettyClient = new NettyClient(new NioEventLoopGroup(),new Bootstrap(), clientConfig,handler);
-        NettyClientThread nettyClientThread=new NettyClientThread(nettyClient);
-        nettyClientThread.start();
+    public void defaultSetting() {
+        messageSendClientConfig=new NettyClientConfig(defaultBrokerAddress);
+        messageSendClient.setNettyClientConfig(messageSendClientConfig);
+        messageSendClient.connectWithoutWaitForClose();
     }
+
+    @Getter
+    private String defaultTopic;
+
+    private KryoInetAddress defaultBrokerAddress;
 
     /**
      * 停止producer
@@ -120,23 +119,33 @@ public class DefaultMQProducer implements MQProducer{
      * @return SendResult
      */
     public SendResult send(final Message message){
-        //todo :choose broker by topic
-        KryoInetAddress brokerAddress = chooseBroker(strategy,topicRouteData,message.getTopic());
-        if(brokerAddress==null){
-            //todo:obtain address twice
-        }
+        return sendMessage(message,this.strategy);
+    }
+
+    private SendResult sendMessage(Message message,BrokerChooseStrategy strategy) {
+        KryoInetAddress brokerAddress = chooseBroker(strategy,topicRouteData, message.getTopic());
         messageSendClientConfig=new NettyClientConfig(brokerAddress);
-        createAndStartClient(messageSendClient,messageSendClientConfig,produceHandler);
-        while(!produceHandler.getConnected()){
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        messageSendClient.setNettyClientConfig(messageSendClientConfig);
+        messageSendClient.connectWithoutWaitForClose();
         produceHandler.sendMsg(message);
+        //todo:obtain return result
         return null;
     }
+
+    public SendResult sendWithStrategy(final Message message,BrokerChooseStrategy strategy1){
+        return sendMessage(message,strategy1);
+    }
+
+    /**
+     * send to default topic
+     * @param message
+     * @return
+     */
+    public SendResult continuousSend(final Message message){
+           produceHandler.sendMsg(message);
+           return null;
+    }
+
 
 
 
@@ -145,4 +154,7 @@ public class DefaultMQProducer implements MQProducer{
         this.strategy=strategy;
     }
 
+    public void setDefaultTopic(String defaultTopic) {
+        this.defaultTopic = defaultTopic;
+    }
 }

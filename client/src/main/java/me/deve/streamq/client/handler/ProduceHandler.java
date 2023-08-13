@@ -7,6 +7,7 @@ package me.deve.streamq.client.handler;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,18 +23,14 @@ import java.util.concurrent.locks.Condition;
  * netty server for client
  */
 @Slf4j
+@ChannelHandler.Sharable
 public class ProduceHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
 
-    private final static KryoSerializer kryoSerializer = new KryoSerializer();
+    private final  KryoSerializer kryoSerializer = new KryoSerializer();
 
     private ChannelHandlerContext ctx;
 
-    public Boolean getConnected() {
-        return isConnected;
-    }
-
-    private Boolean isConnected = false;
 
     public void sendMsg(Message message){
         FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE, message);
@@ -44,14 +41,9 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         this.ctx=ctx;
-       isConnected=true;
 
     }
 
-
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        ctx.close();
-    }
 
     /**
      * Triggered when the client connection is disconnected
@@ -59,7 +51,6 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-        isConnected=false;
     }
 
 

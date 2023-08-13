@@ -51,11 +51,11 @@ public class NettyServer {
                 option(ChannelOption.SO_BACKLOG, nettyServerConfig.getThreadConnectValue()).//设置线程队列连接个数
                 childOption(ChannelOption.SO_KEEPALIVE,nettyServerConfig.getKeepConnectAlive()).//设置保持活动连接状态
                 childHandler(new ChannelInitializer<>() {
+                    //todo:create LineBasedFrameDecoder pool
             @Override
             protected void initChannel(Channel channel) throws Exception {
                 if(useLineBasedFrameDecoder){
                     channel.pipeline().addLast(new LineBasedFrameDecoder(1024));
-                    System.out.println("load LineBasedFrameDecoder");
                 }
                 for (int i = 0; i < handlers.length; i++) {
                     channel.pipeline().addLast(handlers[i]);

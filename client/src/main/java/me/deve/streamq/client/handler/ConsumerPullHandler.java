@@ -73,13 +73,9 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-//        register2Broker(ctx);
-//        startPullMessage(ctx);
+        register2Broker(ctx);
+        startPullMessage(ctx);
 //        consumeMessage(cacheMessage.get());
-        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server1\n".getBytes(CharsetUtil.UTF_8)));
-        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server2\n".getBytes(CharsetUtil.UTF_8)));
-        ctx.channel().writeAndFlush(allocator.buffer().writeBytes("hello server3\n".getBytes(CharsetUtil.UTF_8)));
-
 
     }
     private final Integer CONSUMER_THREAD_COUNT =2;
@@ -105,6 +101,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         byte[] serializeArr = kryoSerializer.serialize(functionMessage);
         int messageLength = serializeArr.length;
         ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
+        ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
     }
 
     /**
@@ -119,6 +116,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                     byte[] pullRequest = kryoSerializer.serialize(functionMessage);
                     int messageLength = pullRequest.length;
                     ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
+                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
                 }
 
     }
