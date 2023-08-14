@@ -26,10 +26,7 @@ import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 
 @Slf4j
@@ -50,9 +47,9 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        startCheckPullRequestTable();
-    }
 
+    }
+    private Boolean startCheckPullRequest=Boolean.FALSE;
     private void startCheckPullRequestTable() {
         ScheduledExecutorService checkPullRequestService = Executors.newScheduledThreadPool(1);
         Runnable checkRequestTask = () ->{
@@ -62,7 +59,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 ChannelHandlerContext ctx = entry.getKey();
                 Long offset = entry.getValue();
                 if(messageQueueController.getConsumeOffset()>offset){
-                    System.out.println("table push offset="+offset+" "+messageQueueController.getConsumeOffset());
                     pushMessage(offset,ctx);
                     iterator.remove();
                 }
@@ -81,17 +77,15 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
             byte[] messageBytes = messageSerializer.serialize(functionMessage);
             ctx.channel().writeAndFlush(allocator.buffer(messageBytes.length).writeBytes(messageBytes));
     }
-    private FurySerializer furySerializer = new FurySerializer();
-    int cnt=0;
 
+
+    private final FurySerializer furySerializer = new FurySerializer();
     @Override
-    public void  channelRead(ChannelHandlerContext ctx, Object msg) {
-        ByteBuf byteBuf= (ByteBuf) msg;
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         byte[] array = getMessageBytes(msg);
+//        System.out.println(array.length);
         FunctionMessage functionMessage = furySerializer.deserialize(array,FunctionMessage.class);
         Long consumerOffset = functionMessage.getOffset();
-        pushMessage(consumerOffset,ctx);
-        System.out.println(cnt++);
         FunctionMessageType messageType = functionMessage.getMessageType();
         if(messageType ==FunctionMessageType.NORMAL_MESSAGE){
             Long offset = messageQueueController.add(functionMessage.getMessage());
@@ -106,6 +100,9 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
                 pushMessage(consumerOffset,ctx);
             }else{
                 pullRequestTable.put(ctx, consumerOffset);
+                if(startCheckPullRequest.equals(Boolean.FALSE)){
+                    startCheckPullRequestTable();
+                }
             }
 
         }
@@ -128,7 +125,9 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
     }
 
-
-
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
+    }
 }
 

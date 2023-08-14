@@ -5,6 +5,7 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.remoting.handler;
 
+import cn.hutool.core.util.ArrayUtil;
 import io.fury.Fury;
 import io.fury.Language;
 import io.netty.buffer.ByteBuf;
@@ -30,12 +31,11 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        FurySerializer fury = new FurySerializer();
-        for(int i=0;i<1000;i++){
-              byte[] serialize = fury.serialize(new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE));
-              ctx.channel().writeAndFlush(allocator.buffer().writeBytes(serialize));
-              ctx.channel().writeAndFlush(allocator.buffer().writeBytes("\n".getBytes()));
-          }
+            FurySerializer fury = new FurySerializer();
+            byte[] serialize = fury.serialize(new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE));
+            byte[] bytes = ArrayUtil.addAll(serialize, "\n".getBytes());
+            ctx.channel().writeAndFlush(allocator.buffer().writeBytes(bytes));
+
     }
 
     @Override

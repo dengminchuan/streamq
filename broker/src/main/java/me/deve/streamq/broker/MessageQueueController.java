@@ -6,6 +6,7 @@
 package me.deve.streamq.broker;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageInfo;
 import me.deve.streamq.common.message.MessageQueue;
@@ -18,7 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-
+@Slf4j
 public class MessageQueueController {
     private final MessageQueue messageQueue=new MessageQueue();
 
@@ -48,6 +49,7 @@ public class MessageQueueController {
         return offset ;
     }
     public Message readMessage(Long consumerOffset){
+        log.info("offset:{}",consumerOffset);
         MessageInfo messageInfo = messageQueue.readMessage(consumerOffset);
         Long offset = messageInfo.getQueueOffset();
         Long length = messageInfo.getLength();

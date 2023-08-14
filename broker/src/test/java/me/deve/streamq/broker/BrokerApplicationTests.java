@@ -108,5 +108,10 @@ class BrokerApplicationTests {
         System.out.println(deserialize);
 
     }
+    @Test
+    void testMessageQueue(){
+        MessageQueueController messageQueueController = new MessageQueueController();
+        Message message = messageQueueController.readMessage(99L);
+    }
 
 }

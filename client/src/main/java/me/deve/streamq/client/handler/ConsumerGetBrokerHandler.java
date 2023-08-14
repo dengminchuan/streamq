@@ -10,6 +10,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.client.consumer.MQConsumer;
 import me.deve.streamq.common.component.Broker;
@@ -24,9 +25,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Semaphore;
 
-/**
- * netty server for client
- */
 @Slf4j
 public class ConsumerGetBrokerHandler extends ChannelInboundHandlerAdapter {
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
@@ -35,18 +33,12 @@ public class ConsumerGetBrokerHandler extends ChannelInboundHandlerAdapter {
 
     private List<String> topics;
 
-    public HashMap<String, List<Broker>> getConsumerTargetBrokers() {
-        return consumerTargetBrokers;
-    }
-
+    @Getter
     private HashMap<String,List<Broker>> consumerTargetBrokers;
 
     private MQConsumer mqConsumer;
 
-    public Semaphore getSemaphore() {
-        return semaphore;
-    }
-
+    @Getter
     private final Semaphore  semaphore=new Semaphore(0);
 
 
@@ -92,9 +84,6 @@ public class ConsumerGetBrokerHandler extends ChannelInboundHandlerAdapter {
     }
     private void registerConsumer(ChannelHandlerContext ctx) {
         writeAndSendMessage(ctx,FunctionMessageType.CONSUMER_READY);
-    }
-    private void logoutConsumer(ChannelHandlerContext ctx) {
-        writeAndSendMessage(ctx,FunctionMessageType.CONSUMER_LOGOUT);
     }
     private void writeAndSendMessage(ChannelHandlerContext ctx,FunctionMessageType type){
         FunctionMessage functionMessage = generateFunctionMessage(type);

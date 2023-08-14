@@ -5,32 +5,24 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.client.consumer;
 
-import com.esotericsoftware.kryo.Kryo;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.client.handler.ConsumerGetBrokerHandler;
 import me.deve.streamq.client.handler.ConsumerPullHandler;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.config.NettyClientConfig;
-import me.deve.streamq.common.message.MessageListener;
 import me.deve.streamq.common.message.MessageListenerConcurrently;
 import me.deve.streamq.remoting.netty.NettyClient;
 import me.deve.streamq.remoting.thread.NettyClientThread;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 @Slf4j
 public class DefaultMQPushConsumer implements MQConsumer {
@@ -89,9 +81,9 @@ public class DefaultMQPushConsumer implements MQConsumer {
         } catch (InterruptedException e) {
             log.info("establishing connection error:"+e);
         }
-        connectConsumers(consumerTargetBrokers);
+        connectBrokers(consumerTargetBrokers);
     }
-    private void connectConsumers(HashMap<String, List<Broker>> consumerTargetBrokers) {
+    private void connectBrokers(HashMap<String, List<Broker>> consumerTargetBrokers) {
         ArrayList<KryoInetAddress> inetSocketAddresses = new ArrayList<>();
         consumerTargetBrokers.forEach((s, brokers) ->
                 brokers.forEach(
@@ -104,6 +96,7 @@ public class DefaultMQPushConsumer implements MQConsumer {
             ConsumerPullHandler consumerPullHandler = new ConsumerPullHandler();
             consumerPullHandler.setMessageListener(messageListener);
             NettyClient nettyClient = new NettyClient(new NioEventLoopGroup(), new Bootstrap(), nettyClientConfig, consumerPullHandler);
+            log.info("connect with:{}",inetSocketAddresses);
             nettyClient.startMultiple(inetSocketAddresses);
         });
 

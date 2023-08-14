@@ -5,6 +5,7 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.client.handler;
 
+import cn.hutool.core.util.ArrayUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -23,6 +24,7 @@ import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageListenerConcurrently;
 import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
+import me.deve.streamq.remoting.symbol.DelimiterSymbol;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,11 +63,11 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         FunctionMessage functionMessage = kryoSerializer.deserialize(array, FunctionMessage.class);
         if(functionMessage.getMessageType()==FunctionMessageType.NORMAL_MESSAGE){
             Message message = functionMessage.getMessage();
-            System.out.println(message);
             cacheMessage.add(message);
             cachedMessageCount.getAndSet(cachedMessageCount.get() + 1);
             //only push message when previous message return
             consumerOffsetTable.put(ctx,consumerOffsetTable.getOrDefault(ctx,-1)+1);
+            System.out.println(cachedMessageCount.get());
             startPullMessage(ctx);
         }
 
@@ -74,6 +76,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("channel active"+ctx.channel().remoteAddress());
         register2Broker(ctx);
         startPullMessage(ctx);
 //        consumeMessage(cacheMessage.get());
@@ -99,10 +102,10 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
 
     private void register2Broker(ChannelHandlerContext ctx) {
         FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.REGISTER_PULL_REQUEST);
-        byte[] serializeArr = furySerializer.serialize(functionMessage);
-        int messageLength = serializeArr.length;
-        ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(serializeArr));
-        ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
+        byte[] pullRequest = furySerializer.serialize(functionMessage);
+        byte[] separator = DelimiterSymbol.DELIMITER_SYMBOL;
+        byte[] sendMsg = ArrayUtil.addAll(pullRequest, separator);
+        ctx.channel().writeAndFlush(allocator.buffer().writeBytes(sendMsg));
     }
 
     /**
@@ -113,11 +116,11 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                 if(cachedMessageCount.get() <=MessageConstant.PULL_MESSAGE_THRESHOLD){
                     FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.PULL_MESSAGE);
                     functionMessage.setOffset(Long.valueOf(consumerOffsetTable.getOrDefault(ctx,-1)));
-                    System.out.println("----functionmessage:"+functionMessage);
                     byte[] pullRequest = furySerializer.serialize(functionMessage);
-                    int messageLength = pullRequest.length;
-                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes(pullRequest));
-                    ctx.channel().writeAndFlush(allocator.buffer(messageLength).writeBytes("\n".getBytes()));
+                    byte[] separator = DelimiterSymbol.DELIMITER_SYMBOL;
+                    byte[] sendMsg = ArrayUtil.addAll(pullRequest, separator);
+                    log.info("pull send msg length:"+sendMsg.length);
+                    ctx.channel().writeAndFlush(allocator.buffer().writeBytes(sendMsg));
                 }
 
     }

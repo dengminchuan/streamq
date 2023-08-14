@@ -7,14 +7,18 @@ package me.deve.streamq.remoting.netty;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import lombok.Data;
 import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.config.NettyServerConfig;
 import me.deve.streamq.remoting.handler.ServerHandler;
+import me.deve.streamq.remoting.symbol.DelimiterSymbol;
+
 @Data
 
 public class NettyServer {
@@ -26,6 +30,7 @@ public class NettyServer {
     private NettyServerConfig nettyServerConfig;
     private ChannelInboundHandlerAdapter []handlers;
     private Boolean useLineBasedFrameDecoder=false;
+    private Boolean useDelimitedFrameDecoder=false;
     public NettyServer (NioEventLoopGroup bossGroup, NioEventLoopGroup workerGroup, ServerBootstrap serverBootstrap, NettyServerConfig nettyServerConfig, ChannelInboundHandlerAdapter... handlers){
         this.bossGroup=bossGroup;
         this.workerGroup=workerGroup;
@@ -43,6 +48,16 @@ public class NettyServer {
         this.useLineBasedFrameDecoder=useLineBasedFrameDecoder;
         initialize();
     }
+    public NettyServer (NioEventLoopGroup bossGroup, NioEventLoopGroup workerGroup, ServerBootstrap serverBootstrap, NettyServerConfig nettyServerConfig, Boolean useLineBasedFrameDecoder,Boolean useDelimiterBasedFrameDecoder, ChannelInboundHandlerAdapter... handlers){
+        this.bossGroup=bossGroup;
+        this.workerGroup=workerGroup;
+        this.serverBootstrap=serverBootstrap;
+        this.nettyServerConfig=nettyServerConfig;
+        this.handlers=handlers;
+        this.useLineBasedFrameDecoder=useLineBasedFrameDecoder;
+        this.useDelimitedFrameDecoder=useDelimiterBasedFrameDecoder;
+        initialize();
+    }
     private void initialize() {
         //进行启动参数的设置
         serverBootstrap.
@@ -56,6 +71,9 @@ public class NettyServer {
             protected void initChannel(Channel channel) throws Exception {
                 if(useLineBasedFrameDecoder){
                     channel.pipeline().addLast(new LineBasedFrameDecoder(1024));
+                }
+                if(useDelimitedFrameDecoder){
+                    channel.pipeline().addLast(new DelimiterBasedFrameDecoder(1024, Unpooled.copiedBuffer(DelimiterSymbol.DELIMITER_SYMBOL)));
                 }
                 for (int i = 0; i < handlers.length; i++) {
                     channel.pipeline().addLast(handlers[i]);

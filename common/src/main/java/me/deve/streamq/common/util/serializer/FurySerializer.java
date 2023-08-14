@@ -16,8 +16,9 @@ import me.deve.streamq.common.message.MessageType;
 
 public class FurySerializer implements Serializer{
 
-    private Fury fury=Fury.builder()
+    private Fury fury= Fury.builder()
             .withLanguage(Language.JAVA)
+            .requireClassRegistration(true)
             .build();
     public FurySerializer(){
         fury.register(Message.class);
@@ -34,7 +35,6 @@ public class FurySerializer implements Serializer{
     @Override
     public <T> T deserialize(byte[] byteArray, Class<T> clazz) {
         T deserialize = (T) fury.deserialize(byteArray);
-        fury.reset();
         return (T) deserialize;
     }
 }

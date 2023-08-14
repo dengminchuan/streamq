@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.constant.MessageConstant;
 import me.deve.streamq.common.queue.ProcessQueue;
 import me.deve.streamq.common.thread.ShutdownHookThread;
@@ -23,6 +24,7 @@ import java.io.IOException;
 /**
  *
  */
+@Slf4j
 public class MessageQueue {
     private String location;
     private static final String MESSAGE_QUEUE_PATH=System.getProperty("file.separator")+"/messageQueue.log";
@@ -48,11 +50,13 @@ public class MessageQueue {
             try (FileInputStream fis = new FileInputStream(file)){
                 KryoSerializer kryoSerializer = new KryoSerializer();
                 processQueue = kryoSerializer.deserialize(fis.readAllBytes(), ProcessQueue.class);
+                log.info("load process queue,queue size:{}",processQueue.getConsumeQueue().size());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }else{
             processQueue=new ProcessQueue();
+            log.info("create new queue");
         }
         messageQueueInfo=new MessageQueueInfo();
     }
