@@ -9,6 +9,7 @@ package me.deve.streamq.common.message;
 
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.IdUtil;
+import lombok.Getter;
 import me.deve.streamq.common.util.serializer.Serializer;
 
 import java.io.Serializable;
@@ -52,9 +53,11 @@ public class Message implements Serializable {
          * 消息体最大大小,默认4m
          */
         private final int MAX_MESSAGE_SIZE=1024*4*4;
+
         /**
          * 消息体
          */
+        @Getter
         private byte[] body;
         /**
          * 消息所属tag,可用于筛选消息

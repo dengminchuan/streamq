@@ -72,6 +72,10 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
     public void pushMessage(Long consumerOffset, ChannelHandlerContext ctx){
             Message message = messageQueueController.readMessage(consumerOffset+1);
+            if(message==null){
+                pullRequestTable.put(ctx,consumerOffset);
+                return;
+            }
             KryoSerializer messageSerializer = new KryoSerializer();
             FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE,message);
             byte[] messageBytes = messageSerializer.serialize(functionMessage);
@@ -79,11 +83,11 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
     }
 
 
-    private final FurySerializer furySerializer = new FurySerializer();
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        FurySerializer furySerializer = new FurySerializer();
         byte[] array = getMessageBytes(msg);
-//        System.out.println(array.length);
         FunctionMessage functionMessage = furySerializer.deserialize(array,FunctionMessage.class);
         Long consumerOffset = functionMessage.getOffset();
         FunctionMessageType messageType = functionMessage.getMessageType();

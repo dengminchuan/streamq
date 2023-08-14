@@ -5,6 +5,7 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.common.message;
 
+import cn.hutool.json.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -14,6 +15,7 @@ import me.deve.streamq.common.constant.MessageConstant;
 import me.deve.streamq.common.queue.ProcessQueue;
 import me.deve.streamq.common.thread.ShutdownHookThread;
 import me.deve.streamq.common.util.FileUtil;
+import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.io.File;
@@ -35,11 +37,11 @@ public class MessageQueue {
         this.messageQueueInfo = messageQueueInfo;
     }
     private MessageQueueInfo messageQueueInfo;
+    private FurySerializer furySerializer = new FurySerializer();
     public MessageQueue(){
         location=System.getProperty("user.dir")+ MESSAGE_QUEUE_PATH;
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(() -> {
-            KryoSerializer kryoSerializer = new KryoSerializer();
-            byte[] serializeBytes = kryoSerializer.serialize(this.processQueue);
+            byte[] serializeBytes = furySerializer.serialize(this.processQueue);
             //record current file index
             File file = new File(location);
             FileUtil.write2Binary(file,serializeBytes,false);
@@ -48,8 +50,7 @@ public class MessageQueue {
         File file = new File(location);
         if(file.exists()){
             try (FileInputStream fis = new FileInputStream(file)){
-                KryoSerializer kryoSerializer = new KryoSerializer();
-                processQueue = kryoSerializer.deserialize(fis.readAllBytes(), ProcessQueue.class);
+                processQueue = furySerializer.deserialize(fis.readAllBytes(), ProcessQueue.class);
                 log.info("load process queue,queue size:{}",processQueue.getConsumeQueue().size());
             } catch (IOException e) {
                 throw new RuntimeException(e);

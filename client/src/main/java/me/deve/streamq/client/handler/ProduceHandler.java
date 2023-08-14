@@ -6,8 +6,10 @@
 package me.deve.streamq.client.handler;
 
 import cn.hutool.core.util.ArrayUtil;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -39,7 +41,10 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
         FunctionMessage functionMessage = new FunctionMessage(FunctionMessageType.NORMAL_MESSAGE, message);
         byte[] serializeArr = furySerializer.serialize(functionMessage);
         byte[] bytes = ArrayUtil.addAll(serializeArr, DelimiterSymbol.DELIMITER_SYMBOL);
-        ctx.channel().writeAndFlush(allocator.buffer().writeBytes(bytes));
+        ByteBuf buffer = allocator.buffer();
+        ChannelFuture channelFuture = ctx.channel().writeAndFlush(buffer.writeBytes(bytes));
+        if(channelFuture.isSuccess()) buffer.release();
+
     }
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {

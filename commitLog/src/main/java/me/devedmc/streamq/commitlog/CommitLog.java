@@ -31,7 +31,7 @@ public class CommitLog {
 
     private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
 
-    private ArrayList<File> files=new ArrayList<>();
+    private volatile ArrayList<File> files=new ArrayList<>();
 
     @Getter
     private Long commitLogOffset =0L;
@@ -145,7 +145,11 @@ public class CommitLog {
         return -1L;
     }
     public Message readMessage(Long offset, Long length){
+        log.info("commit log read offset:{}",offset);
         int fileIndex = judgeIndex(offset);
+        if(fileIndex>currentFileIndex){
+            return null;
+        }
         File currentUsingFile = this.files.get(fileIndex);
         String fileName = currentUsingFile.getName();
         fileName = fileName.substring(0, fileName.lastIndexOf("."));
@@ -166,7 +170,6 @@ public class CommitLog {
     }
 
     private int judgeIndex(Long offset) {
-        ArrayList<File> files = this.files;
         int index=0;
         int totalCount=0;
         for(int i=0;i<files.size();i++){
@@ -199,11 +202,12 @@ public class CommitLog {
                 KryoSerializer kryoSerializer = new KryoSerializer();
                 byte[] messageBytes = kryoSerializer.serialize(message);
                 int length=messageBytes.length;
-                if(length+ currentUsingFile.length() >= MAX_SINGLE_FILE_SIZE){
-                    currentFileIndex++;
-                    updateMessageFile(currentFileIndex);
-                }
-                FileUtil.write2Binary(currentUsingFile,messageBytes,true);
+                    if(length+ currentUsingFile.length() >= MAX_SINGLE_FILE_SIZE){
+                        currentFileIndex++;
+                        updateMessageFile(currentFileIndex);
+                    }
+                    FileUtil.write2Binary(currentUsingFile,messageBytes,true);
+                    files.set(currentFileIndex,currentUsingFile);
             }
         }
     }

@@ -26,6 +26,8 @@ import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 import me.deve.streamq.remoting.symbol.DelimiterSymbol;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,7 +69,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
             cachedMessageCount.getAndSet(cachedMessageCount.get() + 1);
             //only push message when previous message return
             consumerOffsetTable.put(ctx,consumerOffsetTable.getOrDefault(ctx,-1)+1);
-            System.out.println(cachedMessageCount.get());
             startPullMessage(ctx);
         }
 
@@ -79,7 +80,7 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
         log.info("channel active"+ctx.channel().remoteAddress());
         register2Broker(ctx);
         startPullMessage(ctx);
-//        consumeMessage(cacheMessage.get());
+        consumeMessage();
 
     }
     private final Integer CONSUMER_THREAD_COUNT =2;
@@ -89,14 +90,27 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
             100,
             TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<>(),new ThreadPoolExecutor.CallerRunsPolicy());
-    private void consumeMessage(LinkedBlockingQueue<Message> messages) {
+    private void consumeMessage() {
         pool.execute(() -> {
-            while(true){
-                Message message = messages.poll();
-                messageListener.consumeMessage(message);
-            }
+            Timer timer = new Timer();
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    Message message = null;
+                    try {
+                        message = cacheMessage.poll(30, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    if(message!=null){
+                        messageListener.consumeMessage(message);
+                        cachedMessageCount.getAndSet(cachedMessageCount.get() - 1);
+                    }
+                }
+            };
+            timer.schedule(timerTask,0,50);
         });
-        cachedMessageCount.getAndSet(cachedMessageCount.get() - 1);
+
     }
     private FurySerializer furySerializer = new FurySerializer();
 
@@ -119,7 +133,6 @@ public class ConsumerPullHandler extends ChannelInboundHandlerAdapter {
                     byte[] pullRequest = furySerializer.serialize(functionMessage);
                     byte[] separator = DelimiterSymbol.DELIMITER_SYMBOL;
                     byte[] sendMsg = ArrayUtil.addAll(pullRequest, separator);
-                    log.info("pull send msg length:"+sendMsg.length);
                     ctx.channel().writeAndFlush(allocator.buffer().writeBytes(sendMsg));
                 }
 

@@ -12,18 +12,20 @@ import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageType;
+import me.deve.streamq.common.queue.ProcessQueue;
 
 
 public class FurySerializer implements Serializer{
 
     private Fury fury= Fury.builder()
             .withLanguage(Language.JAVA)
-            .requireClassRegistration(true)
+            .requireClassRegistration(false)
             .build();
     public FurySerializer(){
         fury.register(Message.class);
         fury.register(MessageType.class);
         fury.register(FunctionMessage.class);
+        fury.register(ProcessQueue.class);
         fury.register(FunctionMessageType.class);
     }
 

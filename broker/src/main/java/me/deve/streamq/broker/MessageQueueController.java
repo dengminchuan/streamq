@@ -49,7 +49,6 @@ public class MessageQueueController {
         return offset ;
     }
     public Message readMessage(Long consumerOffset){
-        log.info("offset:{}",consumerOffset);
         MessageInfo messageInfo = messageQueue.readMessage(consumerOffset);
         Long offset = messageInfo.getQueueOffset();
         Long length = messageInfo.getLength();
