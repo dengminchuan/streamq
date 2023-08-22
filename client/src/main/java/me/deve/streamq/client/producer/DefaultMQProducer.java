@@ -17,6 +17,7 @@ import me.deve.streamq.client.msgstrategy.BrokerChooseStrategy;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.config.NettyClientConfig;
+import me.deve.streamq.common.util.IdDistributor;
 import me.deve.streamq.remoting.netty.NettyClient;
 import me.deve.streamq.remoting.thread.NettyClientThread;
 
@@ -57,6 +58,8 @@ public class DefaultMQProducer implements MQProducer{
     private CountDownLatch latch=new CountDownLatch(1);
 
     private BrokerChooseStrategy strategy= BrokerChooseStrategy.RANDOM;
+
+    private IdDistributor idDistributor=IdDistributor.getInstance();
 
 
     private static final ThreadPoolExecutor threadPool=new ThreadPoolExecutor(
@@ -123,6 +126,7 @@ public class DefaultMQProducer implements MQProducer{
     }
 
     private SendResult sendMessage(Message message,BrokerChooseStrategy strategy) {
+        idDistributor.setIdByAnnotation(message);
         KryoInetAddress brokerAddress = chooseBroker(strategy,topicRouteData, message.getTopic());
         messageSendClientConfig=new NettyClientConfig(brokerAddress);
         messageSendClient.setNettyClientConfig(messageSendClientConfig);

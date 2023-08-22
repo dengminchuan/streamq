@@ -23,8 +23,6 @@ import java.util.Map;
 public class Message implements Serializable {
 
 
-
-
         @PreferId(workId = "666",maxIncrementCnt = 6)
         private Long id;
         public long gerId(){
@@ -120,6 +118,19 @@ public class Message implements Serializable {
                 this.body=body;
         }
 
-        
-
+        @Override
+        public String toString() {
+                return "Message{" +
+                        "id=" + id +
+                        ", messageType=" + messageType +
+                        ", topic='" + topic + '\'' +
+                        ", MAX_MESSAGE_SIZE=" + MAX_MESSAGE_SIZE +
+                        ", body=" + Arrays.toString(body) +
+                        ", tags=" + Arrays.toString(tags) +
+                        ", key='" + key + '\'' +
+                        ", delayTimeLevel=" + delayTimeLevel +
+                        ", flag=" + flag +
+                        ", extraProperty=" + extraProperty +
+                        '}';
+        }
 }

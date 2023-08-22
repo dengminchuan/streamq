@@ -130,9 +130,13 @@ class CommonApplicationTests {
     @Test
     void testIdDistributer(){
         IdDistributor instance = IdDistributor.getInstance();
-        Message message = new Message("test", "test message".getBytes());
-        instance.setIdByAnnotation(message);
-        System.out.println(message.gerId());
+        long begin=System.currentTimeMillis();
+        for(int i=0;i<1000000;i++){
+            Message message = new Message("test", "test message".getBytes());
+            instance.setIdByAnnotation(message);
+        }
+        long end=System.currentTimeMillis();
+        System.out.println(end-begin);
     }
 
 
