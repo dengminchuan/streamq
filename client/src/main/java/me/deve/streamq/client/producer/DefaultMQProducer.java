@@ -129,6 +129,7 @@ public class DefaultMQProducer implements MQProducer{
         messageSendClient.connectWithoutWaitForClose();
         produceHandler.sendMsg(message);
         //todo:obtain return result
+
         return null;
     }
 

@@ -44,6 +44,7 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
         ByteBuf buffer = allocator.buffer();
         ChannelFuture channelFuture = ctx.channel().writeAndFlush(buffer.writeBytes(bytes));
         if(channelFuture.isSuccess()) buffer.release();
+        //todo:等待ack
 
     }
     @Override
@@ -51,6 +52,10 @@ public class ProduceHandler extends ChannelInboundHandlerAdapter {
         this.ctx=ctx;
     }
 
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        super.channelRead(ctx, msg);
+    }
 
     /**
      * Triggered when the client connection is disconnected

@@ -25,6 +25,7 @@ public class Message implements Serializable {
 
 
 
+        private String id;
         @Override
         public String toString() {
                 return "Message{" +
@@ -125,5 +126,7 @@ public class Message implements Serializable {
         public void setBody(byte[]body){
                 this.body=body;
         }
+
+        
 
 }
