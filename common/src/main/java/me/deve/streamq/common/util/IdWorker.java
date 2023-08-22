@@ -5,6 +5,9 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.common.util;
 
+import cn.hutool.core.net.NetUtil;
+import cn.hutool.core.util.RandomUtil;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 public class IdWorker {
@@ -20,6 +23,9 @@ public class IdWorker {
     private final int sequenceBits=12;
 
     private final int maxWorkerId=1023;
+
+    private long workId;
+
     /**
      * highest 11:not used
      * middle 41:timestamp
@@ -35,13 +41,36 @@ public class IdWorker {
            initTimeStampAndSequence();
            initWorkId(workId);
     }
+    public IdWorker(){
+           initTimeStampAndSequence();
+           initWorkId(null);
+    }
 
-    private void initWorkId(long workId) {
+    private void initWorkId(Long workId) {
+            if(workId==null){
+                workId=generateWorkId();
+            }else{
+                if(workId<0||workId>maxWorkerId){
+                    throw new IllegalArgumentException("please set a right work id,less than 1024 and greater than -1");
+                }
 
+            }
+        this.workId=workId<<(sequenceBits+timeStampBits);
+    }
+
+    private long generateWorkId() {
+        try {
+            int macHashCode = NetUtil.getLocalMacAddress().hashCode();
+            return macHashCode%(maxWorkerId+1);
+        } catch (Exception e) {
+            return RandomUtil.randomInt(0,maxWorkerId+1);
+        }
     }
 
     private void initTimeStampAndSequence() {
-
+            long timeStamp=getNewestTimeStamp();
+            long timeStampWithSequence = timeStamp << sequenceBits;
+            this.timeStampAndSequence=new AtomicLong(timeStampWithSequence);
     }
 
 
@@ -50,7 +79,33 @@ public class IdWorker {
     }
 
 
-       public  long nextId(){
-            return 0;
+       public  long nextId() {
+            long next=timeStampAndSequence.incrementAndGet();
+            long nextTimeStampAndSequence = next & timeStampAndSequenceMask;
+            return workId|nextTimeStampAndSequence;
        }
+
+    /**
+     * more safe but will reduce efficiency
+     * @return id
+     */
+    public long nextIdWithCheck(){
+           waitIfNecessary();
+           return nextId();
+       }
+
+
+    private void waitIfNecessary() {
+        long currentWithSequence = timeStampAndSequence.get();
+        long current=currentWithSequence>>sequenceBits;
+        long newest=getNewestTimeStamp();
+        if(newest<=current){
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                //don‘t care
+            }
+        }
+
+    }
 }
