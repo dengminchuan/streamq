@@ -52,9 +52,10 @@ class ClientApplicationTests {
     @Test
     void testIdWorker(){
         IdWorker idWorker = new IdWorker();
-        while (true) {
-            System.out.println(idWorker.nextId());
-        }
+        System.out.println(idWorker.nextId());
+
+
+
     }
 
 

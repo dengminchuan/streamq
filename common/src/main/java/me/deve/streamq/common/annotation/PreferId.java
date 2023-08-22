@@ -14,4 +14,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface PreferId {
 
+    String workId() default "";
+    int maxIncrementCnt() default -1;
+
 }

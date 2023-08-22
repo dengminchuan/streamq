@@ -24,6 +24,16 @@ public class IdWorker {
 
     private final int maxWorkerId=1023;
 
+    public void setMaxIncrementCnt(int maxIncrementCnt) {
+        this.maxIncrementCnt = maxIncrementCnt;
+    }
+
+    private int maxIncrementCnt=2;
+
+    public void setWorkId(long workId) {
+        this.workId = workId;
+    }
+
     private long workId;
 
     /**
@@ -35,7 +45,7 @@ public class IdWorker {
     /**
      * -1 left shift 53bit then get ~,  timeStampAndSequence&timeStampAndSequenceMask=lowest 53bits
      */
-    private final long timeStampAndSequenceMask=~(-1L<<(workIdBits+sequenceBits));
+    private final long timeStampAndSequenceMask=~(-1L<<(timeStampBits+sequenceBits));
 
     public IdWorker(long workId){
            initTimeStampAndSequence();
@@ -60,8 +70,7 @@ public class IdWorker {
 
     private long generateWorkId() {
         try {
-            int macHashCode = NetUtil.getLocalMacAddress().hashCode();
-            return macHashCode%(maxWorkerId+1);
+            return (Integer.parseInt(NetUtil.getLocalMacAddress())) %(maxWorkerId+1);
         } catch (Exception e) {
             return RandomUtil.randomInt(0,maxWorkerId+1);
         }
@@ -80,11 +89,14 @@ public class IdWorker {
 
 
        public  long nextId() {
-            long next=timeStampAndSequence.incrementAndGet();
+            int incrementCnt=RandomUtil.randomInt(1,maxIncrementCnt);
+            long next=0;
+            for(int i=0;i<=incrementCnt;i++){
+                next=timeStampAndSequence.incrementAndGet();
+            }
             long nextTimeStampAndSequence = next & timeStampAndSequenceMask;
             return workId|nextTimeStampAndSequence;
        }
-
     /**
      * more safe but will reduce efficiency
      * @return id
@@ -101,7 +113,7 @@ public class IdWorker {
         long newest=getNewestTimeStamp();
         if(newest<=current){
             try {
-                Thread.sleep(5);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 //don‘t care
             }

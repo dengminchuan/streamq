@@ -10,6 +10,7 @@ package me.deve.streamq.common.message;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.IdUtil;
 import lombok.Getter;
+import me.deve.streamq.common.annotation.PreferId;
 import me.deve.streamq.common.util.serializer.Serializer;
 
 import java.io.Serializable;
@@ -24,21 +25,13 @@ public class Message implements Serializable {
 
 
 
-
-        private String id;
-        @Override
-        public String toString() {
-                return "Message{" +
-                        "messageType=" + messageType +
-                        ", topic='" + topic + '\'' +
-                        ", MAX_MESSAGE_SIZE=" + MAX_MESSAGE_SIZE +
-                        ", body=" + Arrays.toString(body) +
-                        ", tags=" + Arrays.toString(tags) +
-                        ", key='" + key + '\'' +
-                        ", delayTimeLevel=" + delayTimeLevel +
-                        ", flag=" + flag +
-                        ", extraProperty=" + extraProperty +
-                        '}';
+        @PreferId(workId = "666",maxIncrementCnt = 6)
+        private Long id;
+        public long gerId(){
+                return id;
+        }
+        public void setId(long id){
+               this.id = id;
         }
 
         /**

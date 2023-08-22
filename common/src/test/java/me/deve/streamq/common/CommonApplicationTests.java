@@ -11,6 +11,7 @@ import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.message.MessageInfo;
 import me.deve.streamq.common.message.MessageType;
 import me.deve.streamq.common.util.FileUtil;
+import me.deve.streamq.common.util.IdDistributor;
 import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 import org.junit.jupiter.api.Test;
@@ -125,6 +126,13 @@ class CommonApplicationTests {
             kryoSerializer.serialize(object);
             System.out.println(fury.deserialize(bytes));
         }
+    }
+    @Test
+    void testIdDistributer(){
+        IdDistributor instance = IdDistributor.getInstance();
+        Message message = new Message("test", "test message".getBytes());
+        instance.setIdByAnnotation(message);
+        System.out.println(message.gerId());
     }
 
 
