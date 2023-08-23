@@ -8,7 +8,6 @@ package me.deve.streamq.common.util;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.annotation.PreferId;
 import org.apache.commons.lang3.StringUtils;
-
 import java.lang.reflect.Field;
 @Slf4j
 public class IdDistributor {
