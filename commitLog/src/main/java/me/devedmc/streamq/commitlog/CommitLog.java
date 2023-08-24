@@ -10,9 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.thread.ShutdownHookThread;
 import me.deve.streamq.common.util.FileUtil;
+import me.deve.streamq.common.util.serializer.FurySerializer;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 
 import java.io.*;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -29,7 +32,7 @@ public class CommitLog {
 
     private File currentUsingFile;
 
-    private FlushDiskType flushDiskType=FlushDiskType.ASYN_FLUSH_DISK;
+    private FlushDiskType flushDiskType=FlushDiskType.SYN_FLUSH_DISK;
 
     private volatile ArrayList<File> files=new ArrayList<>();
 
@@ -48,6 +51,9 @@ public class CommitLog {
 
     private Boolean isAdd=false;
 
+    private RandomAccessFile rf;
+
+
 
     private final ConcurrentLinkedQueue<Message> pageCache=new ConcurrentLinkedQueue<>();
     private ScheduledExecutorService flushDiskService = Executors.newScheduledThreadPool(1);
@@ -58,7 +64,6 @@ public class CommitLog {
             File file = new File(location + FILE_INDEX_CONF_PATH);
             FileUtil.string2File(file,currentFileIndex.toString(),false);
             flushDiskService.shutdown();
-            persist();
             File offsetFile = new File(location + COMMITLOG_OFFSET);
             FileUtil.string2File(offsetFile, commitLogOffset.toString(),false);
             System.out.println(files.size());
@@ -78,6 +83,11 @@ public class CommitLog {
         }else{
             commitLogOffset=0L;
         }
+        try {
+            rf=new RandomAccessFile(currentUsingFile, "rw");
+        } catch (FileNotFoundException e) {
+           log.error("create random access file error");
+        }
 
     }
 
@@ -94,12 +104,13 @@ public class CommitLog {
     }
 
 
-    private void updateMessageFile(Integer fileIndex){
+    private  void updateMessageFile(Integer fileIndex){
         String messageFileName = String.format("%020d", fileIndex * MAX_SINGLE_FILE_SIZE)+".bin";
         File messageFile = new File(location + MESSAGE_STORAGE_FILE_PATH+messageFileName);
         if(!messageFile.exists()){
             try {
                 messageFile.createNewFile();
+                rf=new RandomAccessFile(messageFile,"rw");
                 files.add(messageFile);
             } catch (IOException e) {
                 log.error("create file error");
@@ -118,28 +129,34 @@ public class CommitLog {
         }
         return commitLog;
     }
-
     /**
      *
      * @param message
      * @return offset
      */
-    public Long add(Message message){
-        if(!isAdd){
-            isAdd=true;
-            if(flushDiskType==FlushDiskType.ASYN_FLUSH_DISK){
-                flushDiskAsyn();
-            }
-        }
+    public synchronized Long  add(Message message){
+        KryoSerializer ks = new KryoSerializer();
         switch (flushDiskType){
             case ASYN_FLUSH_DISK -> {
-                int length = getLength(message);
-                commitLogOffset +=length;
-                pageCache.add(message);
-                return commitLogOffset-length;
             }
             case SYN_FLUSH_DISK -> {
-                return 0L;
+                //写入后再返回
+                byte[] messageBytes = ks.serialize(message);
+                int length =messageBytes.length;
+                if(commitLogOffset+length>MAX_SINGLE_FILE_SIZE){
+                    currentFileIndex++;
+                    updateMessageFile(currentFileIndex);
+                    commitLogOffset=(MAX_SINGLE_FILE_SIZE-1)*currentFileIndex;
+                }
+                commitLogOffset+=length;
+                try {
+                    MappedByteBuffer map = rf.getChannel().map(FileChannel.MapMode.READ_WRITE, currentUsingFile.length(), length);
+                    map.put(messageBytes);
+                    map.clear();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return commitLogOffset-length;
             }
         }
         return -1L;
@@ -150,10 +167,9 @@ public class CommitLog {
         if(fileIndex>currentFileIndex){
             return null;
         }
-        File currentUsingFile = this.files.get(fileIndex);
-        String fileName = currentUsingFile.getName();
-        fileName = fileName.substring(0, fileName.lastIndexOf("."));
-        long messageOffset = offset - Long.parseLong(fileName);
+        String fileName = String.format("%020d", fileIndex * MAX_SINGLE_FILE_SIZE) + ".bin";
+        File currentUsingFile = new File(fileName);
+        long messageOffset = offset%MAX_SINGLE_FILE_SIZE;
         return parse2Message(currentUsingFile,messageOffset, length);
 
     }
@@ -170,19 +186,8 @@ public class CommitLog {
     }
 
     private int judgeIndex(Long offset) {
-        int index=0;
-        int totalCount=0;
-        for(int i=0;i<files.size();i++){
-            if(totalCount<=offset&&totalCount+files.get(i).length()>offset){
-                break;
-            }else{
-                index++;
-                totalCount+= (int) files.get(i).length();
-            }
-        }
-
-
-        return index;
+        long index = offset / MAX_SINGLE_FILE_SIZE;
+        return (int) index;
     }
     public static int getLength(Message message) {
         KryoSerializer kryoSerializer = new KryoSerializer();
@@ -196,20 +201,7 @@ public class CommitLog {
     }
 
     private void persist() {
-        if(!pageCache.isEmpty()){
-            Message message;
-            while((message=pageCache.poll())!=null){
-                KryoSerializer kryoSerializer = new KryoSerializer();
-                byte[] messageBytes = kryoSerializer.serialize(message);
-                int length=messageBytes.length;
-                    if(length+ currentUsingFile.length() >= MAX_SINGLE_FILE_SIZE){
-                        currentFileIndex++;
-                        updateMessageFile(currentFileIndex);
-                    }
-                    FileUtil.write2Binary(currentUsingFile,messageBytes,true);
-                    files.set(currentFileIndex,currentUsingFile);
-            }
-        }
+
     }
 
     public static byte[] combineBytes(byte[] bytes1,byte[] bytes2){
