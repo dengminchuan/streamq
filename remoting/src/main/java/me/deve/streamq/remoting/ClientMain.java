@@ -6,8 +6,15 @@
 package me.deve.streamq.remoting;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
+import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.remoting.handler.ClientHandler;
@@ -19,9 +26,8 @@ import java.net.InetSocketAddress;
  * Client功能测试类
  */
 public class ClientMain {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
             NettyClient nettyClient = new NettyClient(new NioEventLoopGroup(), new Bootstrap(), new NettyClientConfig(new KryoInetAddress("127.0.0.1",8810)), new ClientHandler());
             nettyClient.start();
-
     }
 }

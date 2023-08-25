@@ -16,6 +16,7 @@ import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
+import me.deve.streamq.nameserver.NameserverStartup;
 import me.deve.streamq.nameserver.timertask.DeleteTimerTask;
 import me.deve.streamq.nameserver.timertask.PersistTimerTask;
 
@@ -72,6 +73,8 @@ public class NameServerDealHeartUploadHandler extends ChannelInboundHandlerAdapt
           use file to store data
          */
         livingBrokers.put(message.getBroker(),DateUtil.date());
+        //infect to other
+//        NameserverStartup.targetAddressList
         byteBuf.release();
 
     }

@@ -11,10 +11,14 @@ import me.deve.streamq.common.config.NameserverConfig;
 import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.config.NettyServerConfig;
 import me.deve.streamq.common.thread.ShutdownHookThread;
+import me.deve.streamq.nameserver.gossip.GossipHandler;
 import me.deve.streamq.nameserver.handler.NameServerDealFindingHandler;
 import me.deve.streamq.nameserver.handler.NameServerDealHeartUploadHandler;
 import me.deve.streamq.remoting.netty.NettyClient;
 import me.deve.streamq.remoting.netty.NettyServer;
+
+import java.net.InetSocketAddress;
+import java.util.List;
 
 public class NameserverController {
     private NettyServerConfig nettyServerConfig;
@@ -33,7 +37,13 @@ public class NameserverController {
         this.nettyServerConfig = nettyServerConfig;
         this.nameserverConfig=nameserverConfig;
         this.nettyClientConfig=nettyClientConfig;
-        initializeNetworkComponents();
+        initializeNetworkComponentsForSingle();
+    }
+    public NameserverController(NettyServerConfig nettyServerConfig, NettyClientConfig nettyClientConfig, NameserverConfig nameserverConfig, List<InetSocketAddress> targetAddress){
+        this.nettyServerConfig = nettyServerConfig;
+        this.nameserverConfig=nameserverConfig;
+        this.nettyClientConfig=nettyClientConfig;
+        initializeNetworkComponentsForCluster();
     }
     public void start(){
         nettyServer.start();
@@ -46,7 +56,10 @@ public class NameserverController {
         }));
 
     }
-    private void initializeNetworkComponents(){
+    public void startClient(){
+
+    }
+    private void initializeNetworkComponentsForSingle(){
         NioEventLoopGroup bossGroup = new NioEventLoopGroup();
         NioEventLoopGroup workerGroup = new NioEventLoopGroup();
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -54,9 +67,21 @@ public class NameserverController {
         NameServerDealFindingHandler nameServerDealFindingHandler = new NameServerDealFindingHandler();
         //addLast mode to add handler
         nettyServer = new NettyServer(bossGroup, workerGroup, bootstrap, nettyServerConfig, nameServerDealHeartUploadHandler,nameServerDealFindingHandler);
+
+    }
+    private void initializeNetworkComponentsForCluster(){
+        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        NameServerDealHeartUploadHandler nameServerDealHeartUploadHandler = new NameServerDealHeartUploadHandler();
+        NameServerDealFindingHandler nameServerDealFindingHandler = new NameServerDealFindingHandler();
+        GossipHandler gossipHandler = new GossipHandler();
+        //addLast mode to add handler
+        nettyServer = new NettyServer(bossGroup, workerGroup, bootstrap, nettyServerConfig, nameServerDealHeartUploadHandler,nameServerDealFindingHandler,gossipHandler);
     }
     public void shutdown(){
         nettyServer.shutdown();
+
 
     }
 

@@ -99,6 +99,7 @@ public class NameServerDealFindingHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.info("broker断开连接");
+        //todo:删除节点信息
         super.channelInactive(ctx);
     }
 }

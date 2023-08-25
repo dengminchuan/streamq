@@ -39,6 +39,12 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         System.out.println(functionMessage);
     }
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+
+        System.out.println("channel active");
+    }
+
     public byte[] getMessageBytes(Object msg){
         ByteBuf byteBuf= (ByteBuf) msg;
         byte[] array = new byte[byteBuf.readableBytes()];
