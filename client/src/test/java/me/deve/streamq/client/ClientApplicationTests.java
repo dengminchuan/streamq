@@ -1,17 +1,17 @@
 package me.deve.streamq.client;
 
-import cn.hutool.core.lang.hash.Hash;
 import cn.hutool.core.net.NetUtil;
+import me.deve.streamq.client.loadbalance.BrokerLoadBalance;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.common.util.IdWorker;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 
 
@@ -53,8 +53,11 @@ class ClientApplicationTests {
     void testIdWorker(){
         IdWorker idWorker = new IdWorker();
         System.out.println(idWorker.nextId());
+    }
+    @Test
+    void testAddress() throws UnknownHostException {
 
-
+        System.out.println(BrokerLoadBalance.hash(InetAddress.getLocalHost().getHostAddress()));
 
     }
 

@@ -20,10 +20,9 @@ import me.deve.streamq.nameserver.NameserverStartup;
 import me.deve.streamq.nameserver.timertask.DeleteTimerTask;
 import me.deve.streamq.nameserver.timertask.PersistTimerTask;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -42,6 +41,7 @@ public class NameServerDealHeartUploadHandler extends ChannelInboundHandlerAdapt
 
     private  final PersistTimerTask persistTimerTask=new PersistTimerTask(livingBrokers);
 
+    private ThreadPoolExecutor infectThreadPool=new ThreadPoolExecutor(5,10,1000,TimeUnit.MILLISECONDS,new ArrayBlockingQueue<>(10),new ThreadPoolExecutor.AbortPolicy());
     private final ThreadPoolExecutor threadPool=new ThreadPoolExecutor(
             5,
             10,
@@ -73,8 +73,8 @@ public class NameServerDealHeartUploadHandler extends ChannelInboundHandlerAdapt
           use file to store data
          */
         livingBrokers.put(message.getBroker(),DateUtil.date());
-        //infect to other
-//        NameserverStartup.targetAddressList
+
+
         byteBuf.release();
 
     }

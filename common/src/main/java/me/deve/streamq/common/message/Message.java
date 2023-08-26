@@ -54,6 +54,7 @@ public class Message implements Serializable {
         /**
          * 消息所属tag,可用于筛选消息
          */
+        @Getter
         private String []tags;
         /**
          * 代表消息的关键词

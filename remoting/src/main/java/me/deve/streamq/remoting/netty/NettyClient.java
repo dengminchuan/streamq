@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.common.config.NettyClientConfig;
 
+import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -110,6 +111,7 @@ public class NettyClient {
                 });
             });
     }
+
     public void shutdown(){
         eventExecutors.shutdownGracefully();
     }

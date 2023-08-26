@@ -18,6 +18,7 @@ import me.deve.streamq.common.constant.TimerConstant;
 import me.deve.streamq.common.message.FunctionMessage;
 import me.deve.streamq.common.message.FunctionMessageType;
 import me.deve.streamq.common.util.serializer.KryoSerializer;
+import me.deve.streamq.nameserver.NameserverStartup;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -31,6 +32,9 @@ public class GossipHandler extends ChannelInboundHandlerAdapter {
     private final KryoSerializer kryoSerializer = new KryoSerializer();
 
     private final ByteBufAllocator allocator= PooledByteBufAllocator.DEFAULT;
+
+
+
     /**
      * nameserver's name and address
      */

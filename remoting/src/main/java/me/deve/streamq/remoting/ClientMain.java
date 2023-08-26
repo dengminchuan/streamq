@@ -20,6 +20,7 @@ import me.deve.streamq.common.address.KryoInetAddress;
 import me.deve.streamq.remoting.handler.ClientHandler;
 import me.deve.streamq.remoting.netty.NettyClient;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 
 /**
@@ -27,7 +28,15 @@ import java.net.InetSocketAddress;
  */
 public class ClientMain {
     public static void main(String[] args) throws InterruptedException {
+        try {
             NettyClient nettyClient = new NettyClient(new NioEventLoopGroup(), new Bootstrap(), new NettyClientConfig(new KryoInetAddress("127.0.0.1",8810)), new ClientHandler());
             nettyClient.start();
+        } catch (Exception e) {
+            if(e instanceof ConnectException){
+                e.printStackTrace();
+            }
+
+
+        }
     }
 }

@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import me.deve.streamq.client.handler.ServerFindClientHandler;
 import me.deve.streamq.client.handler.ProduceHandler;
+import me.deve.streamq.client.loadbalance.BrokerLoadBalance;
 import me.deve.streamq.common.message.Message;
 import me.deve.streamq.client.msgstrategy.BrokerChooseStrategy;
 import me.deve.streamq.common.address.KryoInetAddress;
@@ -19,13 +20,12 @@ import me.deve.streamq.common.component.Broker;
 import me.deve.streamq.common.config.NettyClientConfig;
 import me.deve.streamq.common.util.IdDistributor;
 import me.deve.streamq.remoting.netty.NettyClient;
-import me.deve.streamq.remoting.thread.NettyClientThread;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static me.deve.streamq.client.util.ClientUtil.chooseBroker;
+
 
 /**
  * 默认生产者
@@ -53,7 +53,7 @@ public class DefaultMQProducer implements MQProducer{
 
     private final ProduceHandler produceHandler=new ProduceHandler();
 
-    public  volatile HashMap<String, List<Broker>> topicRouteData;
+    public volatile HashMap<String, List<Broker>> topicRouteData;
 
     private CountDownLatch latch=new CountDownLatch(1);
 
@@ -90,10 +90,11 @@ public class DefaultMQProducer implements MQProducer{
         } catch (InterruptedException e) {
             log.error("can not get topicRouteData");
         }
-        if(defaultTopic!=null){
-             defaultBrokerAddress = chooseBroker(strategy,topicRouteData, defaultTopic);
-             defaultSetting();
-        }
+//        if(defaultTopic!=null){
+//            BrokerLoadBalance brokerLoadBalance = new BrokerLoadBalance();
+//            defaultBrokerAddress = brokerLoadBalance.chooseBroker(strategy, defaultTopic);
+//             defaultSetting();
+//        }
 
     }
 
@@ -124,16 +125,15 @@ public class DefaultMQProducer implements MQProducer{
     public SendResult send(final Message message){
         return sendMessage(message,this.strategy);
     }
-
+    private final BrokerLoadBalance brokerLoadBalance = new BrokerLoadBalance(this);
     private SendResult sendMessage(Message message,BrokerChooseStrategy strategy) {
         idDistributor.setIdByAnnotation(message);
-        KryoInetAddress brokerAddress = chooseBroker(strategy,topicRouteData, message.getTopic());
+        KryoInetAddress brokerAddress = brokerLoadBalance.chooseBroker(strategy,message.getTopic(),message);
         messageSendClientConfig=new NettyClientConfig(brokerAddress);
         messageSendClient.setNettyClientConfig(messageSendClientConfig);
         messageSendClient.connectWithoutWaitForClose();
         produceHandler.sendMsg(message);
         //todo:obtain return result
-
         return null;
     }
 
@@ -141,15 +141,15 @@ public class DefaultMQProducer implements MQProducer{
         return sendMessage(message,strategy1);
     }
 
-    /**
-     * send to default topic
-     * @param message
-     * @return
-     */
-    public SendResult continuousSend(final Message message){
-           produceHandler.sendMsg(message);
-           return null;
-    }
+//    /**
+//     * send to default topic
+//     * @param message
+//     * @return
+//     */
+//    public SendResult continuousSend(final Message message){
+//           produceHandler.sendMsg(message);
+//           return null;
+//    }
 
 
 

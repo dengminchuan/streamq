@@ -5,6 +5,7 @@
 //@software:IntelliJ IDEA
 package me.deve.streamq.nameserver;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.nio.NioEventLoopGroup;
 import me.deve.streamq.common.config.NameserverConfig;
@@ -16,6 +17,8 @@ import me.deve.streamq.nameserver.handler.NameServerDealFindingHandler;
 import me.deve.streamq.nameserver.handler.NameServerDealHeartUploadHandler;
 import me.deve.streamq.remoting.netty.NettyClient;
 import me.deve.streamq.remoting.netty.NettyServer;
+import me.deve.streamq.remoting.thread.NettyClientThread;
+import me.deve.streamq.remoting.thread.NettyServerThread;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -33,20 +36,24 @@ public class NameserverController {
     public NameserverController(){
 
     }
+
+    private boolean useCluster=false;
     public NameserverController(NettyServerConfig nettyServerConfig,NettyClientConfig nettyClientConfig,NameserverConfig nameserverConfig){
         this.nettyServerConfig = nettyServerConfig;
         this.nameserverConfig=nameserverConfig;
         this.nettyClientConfig=nettyClientConfig;
         initializeNetworkComponentsForSingle();
     }
-    public NameserverController(NettyServerConfig nettyServerConfig, NettyClientConfig nettyClientConfig, NameserverConfig nameserverConfig, List<InetSocketAddress> targetAddress){
-        this.nettyServerConfig = nettyServerConfig;
-        this.nameserverConfig=nameserverConfig;
-        this.nettyClientConfig=nettyClientConfig;
-        initializeNetworkComponentsForCluster();
-    }
     public void start(){
-        nettyServer.start();
+        NettyServerThread nettyServerThread = new NettyServerThread(nettyServer);
+        nettyServerThread.start();
+        if(useCluster){
+            NioEventLoopGroup bossGroup = new NioEventLoopGroup();
+            NioEventLoopGroup workerGroup = new NioEventLoopGroup();
+            Bootstrap bootstrap=new Bootstrap();
+            NettyClientThread nettyClientThread = new NettyClientThread(nettyClient);
+            nettyClientThread.start();
+        }
         /**
          * shutdown gracefully
          */
@@ -69,16 +76,7 @@ public class NameserverController {
         nettyServer = new NettyServer(bossGroup, workerGroup, bootstrap, nettyServerConfig, nameServerDealHeartUploadHandler,nameServerDealFindingHandler);
 
     }
-    private void initializeNetworkComponentsForCluster(){
-        NioEventLoopGroup bossGroup = new NioEventLoopGroup();
-        NioEventLoopGroup workerGroup = new NioEventLoopGroup();
-        ServerBootstrap bootstrap = new ServerBootstrap();
-        NameServerDealHeartUploadHandler nameServerDealHeartUploadHandler = new NameServerDealHeartUploadHandler();
-        NameServerDealFindingHandler nameServerDealFindingHandler = new NameServerDealFindingHandler();
-        GossipHandler gossipHandler = new GossipHandler();
-        //addLast mode to add handler
-        nettyServer = new NettyServer(bossGroup, workerGroup, bootstrap, nettyServerConfig, nameServerDealHeartUploadHandler,nameServerDealFindingHandler,gossipHandler);
-    }
+
     public void shutdown(){
         nettyServer.shutdown();
 

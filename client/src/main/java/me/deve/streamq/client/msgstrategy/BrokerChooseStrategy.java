@@ -11,6 +11,7 @@ package me.deve.streamq.client.msgstrategy;
 public enum BrokerChooseStrategy {
     ROUND_ROBIN,
     RANDOM,
-    HASH
+    HASH,
+    CONSISTENCY_HASH
 
 }

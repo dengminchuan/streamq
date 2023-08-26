@@ -113,10 +113,6 @@ public class MessageServerHandler extends ChannelInboundHandlerAdapter {
 
     }
 
-    private FunctionMessage getFunctionMessage(byte[] array) {
-        KryoSerializer kryoSerializer = new KryoSerializer();
-        return kryoSerializer.deserialize(array, FunctionMessage.class);
-    }
 
     public byte[] getMessageBytes(Object msg){
         ByteBuf byteBuf= (ByteBuf) msg;
